@@ -9,6 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/layout/Navbar';
 import ExcelImporter from '@/components/chapters/ExcelImporter';
@@ -24,6 +28,11 @@ interface Word {
   notes?: string;
   isBookmarked: boolean;
   isKnown?: boolean;
+  difficulty?: number; // 1-5 scale
+  topikLevel?: string; // TOPIK-1, TOPIK-2, or none
+  tags?: string[];
+  createdAt?: string;
+  priority?: number; // 1-5, higher is more important
 }
 interface Chapter {
   title: string;
@@ -52,8 +61,13 @@ const ChapterDetail = () => {
     phonetic: '',
     example: '',
     notes: '',
-    isBookmarked: false
+    isBookmarked: false,
+    difficulty: 3,
+    topikLevel: '',
+    tags: [],
+    priority: 3
   });
+  const [tagInput, setTagInput] = useState<string>('');
   const [quickNewWord, setQuickNewWord] = useState({
     word: '',
     definition: ''
@@ -62,6 +76,9 @@ const ChapterDetail = () => {
   const [showExcelImport, setShowExcelImport] = useState<boolean>(false);
   const [mode, setMode] = useState<'table' | 'cards' | 'known' | 'flashcards'>('table');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('alphabetical');
+  const [topikFilter, setTopikFilter] = useState<string>('all');
   const sortWordsAlphabetically = (words: Word[]) => {
     return [...words].sort((a, b) => a.word.toLowerCase().localeCompare(b.word.toLowerCase()));
   };
@@ -193,7 +210,12 @@ const ChapterDetail = () => {
         example: '',
         notes: '',
         isBookmarked: false,
-        isKnown: false
+        isKnown: false,
+        difficulty: 3,
+        topikLevel: '',
+        tags: [],
+        createdAt: new Date().toISOString(),
+        priority: 3
       });
     }
     if (wordsToAdd.length === 0) {
@@ -267,7 +289,12 @@ const ChapterDetail = () => {
       example: newWord.example || '',
       notes: newWord.notes || '',
       isBookmarked: false,
-      isKnown: false
+      isKnown: false,
+      difficulty: newWord.difficulty || 3,
+      topikLevel: newWord.topikLevel || '',
+      tags: newWord.tags || [],
+      createdAt: new Date().toISOString(),
+      priority: newWord.priority || 3
     };
     const updatedWords = [...(chapter.words || []), wordToAdd];
     const updatedChapter = {
@@ -283,8 +310,13 @@ const ChapterDetail = () => {
         phonetic: '',
         example: '',
         notes: '',
-        isBookmarked: false
+        isBookmarked: false,
+        difficulty: 3,
+        topikLevel: '',
+        tags: [],
+        priority: 3
       });
+      setTagInput('');
       setIsAddingWord(false);
       toast({
         title: "Word added",
@@ -330,7 +362,12 @@ const ChapterDetail = () => {
       example: '',
       notes: '',
       isBookmarked: false,
-      isKnown: false
+      isKnown: false,
+      difficulty: 3,
+      topikLevel: '',
+      tags: [],
+      createdAt: new Date().toISOString(),
+      priority: 3
     };
     const updatedWords = [...(chapter.words || []), wordToAdd];
     const updatedChapter = {
@@ -606,9 +643,54 @@ const ChapterDetail = () => {
   };
   const filteredWords = (words: Word[]) => {
     let filtered = processWordsForDisplay(words);
+    
+    // Search filter
     if (searchQuery) {
-      filtered = filtered.filter(word => word.word.toLowerCase().includes(searchQuery.toLowerCase()) || word.definition.toLowerCase().includes(searchQuery.toLowerCase()) || word.phonetic?.toLowerCase().includes(searchQuery.toLowerCase()) || word.example?.toLowerCase().includes(searchQuery.toLowerCase()));
+      filtered = filtered.filter(word => 
+        word.word.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        word.definition.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        word.phonetic?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        word.example?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        word.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
     }
+    
+    // Difficulty filter
+    if (difficultyFilter !== 'all') {
+      const difficulty = parseInt(difficultyFilter);
+      filtered = filtered.filter(word => word.difficulty === difficulty);
+    }
+    
+    // TOPIK filter
+    if (topikFilter !== 'all') {
+      if (topikFilter === 'none') {
+        filtered = filtered.filter(word => !word.topikLevel || word.topikLevel === '');
+      } else {
+        filtered = filtered.filter(word => word.topikLevel === topikFilter);
+      }
+    }
+    
+    // Sorting
+    if (sortBy === 'alphabetical') {
+      return sortWordsAlphabetically(filtered);
+    } else if (sortBy === 'date-newest') {
+      return [...filtered].sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+    } else if (sortBy === 'date-oldest') {
+      return [...filtered].sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateA - dateB;
+      });
+    } else if (sortBy === 'priority') {
+      return [...filtered].sort((a, b) => (b.priority || 3) - (a.priority || 3));
+    } else if (sortBy === 'difficulty') {
+      return [...filtered].sort((a, b) => (b.difficulty || 3) - (a.difficulty || 3));
+    }
+    
     return sortWordsAlphabetically(filtered);
   };
   if (!chapter) {
@@ -673,10 +755,76 @@ const ChapterDetail = () => {
               </div>
             </div>
 
-            <div className="mb-4 relative">
+            <div className="mb-4 space-y-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input type="text" placeholder="Search words, definitions, or examples..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input type="text" placeholder="Search words, definitions, tags..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9" />
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div>
+                  <Label className="text-sm text-muted-foreground mb-1.5 block">Difficulty</Label>
+                  <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Levels</SelectItem>
+                      <SelectItem value="1">⭐ Level 1</SelectItem>
+                      <SelectItem value="2">⭐⭐ Level 2</SelectItem>
+                      <SelectItem value="3">⭐⭐⭐ Level 3</SelectItem>
+                      <SelectItem value="4">⭐⭐⭐⭐ Level 4</SelectItem>
+                      <SelectItem value="5">⭐⭐⭐⭐⭐ Level 5</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label className="text-sm text-muted-foreground mb-1.5 block">TOPIK Level</Label>
+                  <Select value={topikFilter} onValueChange={setTopikFilter}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="none">No TOPIK</SelectItem>
+                      <SelectItem value="TOPIK-1">TOPIK-1</SelectItem>
+                      <SelectItem value="TOPIK-2">TOPIK-2</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label className="text-sm text-muted-foreground mb-1.5 block">Sort By</Label>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Sort" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="alphabetical">A-Z</SelectItem>
+                      <SelectItem value="date-newest">Newest First</SelectItem>
+                      <SelectItem value="date-oldest">Oldest First</SelectItem>
+                      <SelectItem value="priority">Priority</SelectItem>
+                      <SelectItem value="difficulty">Difficulty</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-end">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setSearchQuery('');
+                      setDifficultyFilter('all');
+                      setTopikFilter('all');
+                      setSortBy('alphabetical');
+                    }}
+                    className="h-9 w-full"
+                  >
+                    <FilterX className="h-4 w-4 mr-2" />
+                    Clear
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -692,17 +840,39 @@ const ChapterDetail = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Word</TableHead>
-                        <TableHead>Definition</TableHead>
-                        <TableHead>Meaning </TableHead>
+                        <TableHead>Korean</TableHead>
+                        <TableHead>English</TableHead>
+                        <TableHead>Level</TableHead>
+                        <TableHead>TOPIK</TableHead>
                         <TableHead className="w-[100px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredWords(unknownWords).length > 0 ? filteredWords(unknownWords).map(word => <TableRow key={word.id}>
-                            <TableCell className="font-medium">{word.word}</TableCell>
-                            <TableCell>{word.definition}</TableCell>
-                            <TableCell>{word.phonetic}</TableCell>
+                            <TableCell className="font-medium">
+                              <div>{word.word}</div>
+                              {word.phonetic && <div className="text-xs text-muted-foreground">{word.phonetic}</div>}
+                            </TableCell>
+                            <TableCell>
+                              <div>{word.definition}</div>
+                              {word.tags && word.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {word.tags.map((tag, idx) => (
+                                    <Badge key={idx} variant="outline" className="text-xs">{tag}</Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                {'⭐'.repeat(word.difficulty || 3)}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {word.topikLevel && (
+                                <Badge variant="secondary" className="text-xs">{word.topikLevel}</Badge>
+                              )}
+                            </TableCell>
                             <TableCell>
                               <div className="flex items-center space-x-1">
                                 <Button variant="ghost" size="sm" onClick={() => handleMarkAsKnown(word.id)} className="h-8 w-8 p-0" title="Mark as known">
@@ -717,8 +887,8 @@ const ChapterDetail = () => {
                               </div>
                             </TableCell>
                           </TableRow>) : <TableRow>
-                          <TableCell colSpan={4} className="text-center py-6 text-gray-500">
-                            {searchQuery ? 'No words match your search' : 'No words to learn in this chapter'}
+                          <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                            {searchQuery || difficultyFilter !== 'all' || topikFilter !== 'all' ? 'No words match your filters' : 'No words to learn in this chapter'}
                           </TableCell>
                         </TableRow>}
                     </TableBody>
@@ -728,13 +898,31 @@ const ChapterDetail = () => {
               
               <TabsContent value="cards">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  {filteredWords(unknownWords).length > 0 ? filteredWords(unknownWords).map(word => <div key={word.id} className="border rounded-md p-4 hover:shadow-sm transition-shadow bg-gray-50">
-                        <div className="flex justify-between items-start">
+                  {filteredWords(unknownWords).length > 0 ? filteredWords(unknownWords).map(word => <div key={word.id} className="border rounded-md p-4 hover:shadow-sm transition-shadow bg-card">
+                        <div className="flex justify-between items-start gap-3">
                           <div className="flex-1">
-                            <h3 className="font-medium text-lg">{word.word}</h3>
-                            {word.phonetic && <p className="text-sm text-gray-500 mb-1">{word.phonetic}</p>}
-                            <p className="text-gray-800 mb-2">{word.definition}</p>
-                            {word.example && <p className="text-sm text-gray-600 italic">"{word.example}"</p>}
+                            <div className="flex items-start justify-between mb-2">
+                              <div>
+                                <h3 className="font-medium text-lg">{word.word}</h3>
+                                {word.phonetic && <p className="text-sm text-muted-foreground mb-1">{word.phonetic}</p>}
+                              </div>
+                              <div className="flex gap-2 text-xs">
+                                {'⭐'.repeat(word.difficulty || 3)}
+                                {word.topikLevel && (
+                                  <Badge variant="secondary" className="text-xs">{word.topikLevel}</Badge>
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-foreground mb-2">{word.definition}</p>
+                            {word.example && <p className="text-sm text-muted-foreground italic mb-2">"{word.example}"</p>}
+                            {word.notes && <p className="text-sm text-muted-foreground">"{word.notes}"</p>}
+                            {word.tags && word.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {word.tags.map((tag, idx) => (
+                                  <Badge key={idx} variant="outline" className="text-xs">{tag}</Badge>
+                                ))}
+                              </div>
+                            )}
                           </div>
                           <div className="flex flex-col space-y-1">
                             <Button variant="ghost" size="sm" onClick={() => handleMarkAsKnown(word.id)} className="h-8 w-8 p-0" title="Mark as known">
@@ -743,15 +931,15 @@ const ChapterDetail = () => {
                             <Button variant="ghost" size="sm" onClick={() => handleEditWord(word)} className="h-8 w-8 p-0" title="Edit word">
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleDeleteWord(word.id)} className="h-8 w-8 p-0 text-red-500 hover:text-red-600" title="Delete word">
+                            <Button variant="ghost" size="sm" onClick={() => handleDeleteWord(word.id)} className="h-8 w-8 p-0 text-destructive hover:text-destructive" title="Delete word">
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
-                      </div>) : <div className="col-span-2 text-center py-10 border rounded-md bg-gray-50">
-                      <BookOpen className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-                      <p className="text-gray-500">
-                        {searchQuery ? 'No words match your search' : 'No words to learn in this chapter'}
+                      </div>) : <div className="col-span-2 text-center py-10 border rounded-md bg-card">
+                      <BookOpen className="h-10 w-10 text-muted mx-auto mb-2" />
+                      <p className="text-muted-foreground">
+                        {searchQuery || difficultyFilter !== 'all' || topikFilter !== 'all' ? 'No words match your filters' : 'No words to learn in this chapter'}
                       </p>
                     </div>}
                 </div>
@@ -762,17 +950,39 @@ const ChapterDetail = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Word</TableHead>
-                        <TableHead>Definition</TableHead>
-                        <TableHead>Phonetic</TableHead>
+                        <TableHead>Korean</TableHead>
+                        <TableHead>English</TableHead>
+                        <TableHead>Level</TableHead>
+                        <TableHead>TOPIK</TableHead>
                         <TableHead className="w-[100px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredWords(knownWords).length > 0 ? filteredWords(knownWords).map(word => <TableRow key={word.id}>
-                            <TableCell className="font-medium">{word.word}</TableCell>
-                            <TableCell>{word.definition}</TableCell>
-                            <TableCell>{word.phonetic}</TableCell>
+                            <TableCell className="font-medium">
+                              <div>{word.word}</div>
+                              {word.phonetic && <div className="text-xs text-muted-foreground">{word.phonetic}</div>}
+                            </TableCell>
+                            <TableCell>
+                              <div>{word.definition}</div>
+                              {word.tags && word.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {word.tags.map((tag, idx) => (
+                                    <Badge key={idx} variant="outline" className="text-xs">{tag}</Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                {'⭐'.repeat(word.difficulty || 3)}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {word.topikLevel && (
+                                <Badge variant="secondary" className="text-xs">{word.topikLevel}</Badge>
+                              )}
+                            </TableCell>
                             <TableCell>
                               <div className="flex items-center space-x-1">
                                 <Button variant="ghost" size="sm" onClick={() => handleMarkAsKnown(word.id)} className="h-8 w-8 p-0 text-green-500" title="Mark as unknown">
@@ -781,14 +991,14 @@ const ChapterDetail = () => {
                                 <Button variant="ghost" size="sm" onClick={() => handleEditWord(word)} className="h-8 w-8 p-0" title="Edit word">
                                   <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm" onClick={() => handleDeleteWord(word.id)} className="h-8 w-8 p-0 text-red-500 hover:text-red-600" title="Delete word">
+                                <Button variant="ghost" size="sm" onClick={() => handleDeleteWord(word.id)} className="h-8 w-8 p-0 text-destructive hover:text-destructive" title="Delete word">
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </TableCell>
                           </TableRow>) : <TableRow>
-                          <TableCell colSpan={4} className="text-center py-6 text-gray-500">
-                            {searchQuery ? 'No words match your search' : 'No known words in this chapter yet'}
+                          <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                            {searchQuery || difficultyFilter !== 'all' || topikFilter !== 'all' ? 'No words match your filters' : 'No known words in this chapter yet'}
                           </TableCell>
                         </TableRow>}
                     </TableBody>
@@ -812,50 +1022,181 @@ const ChapterDetail = () => {
       </main>
       
       <Dialog open={isAddingWord} onOpenChange={setIsAddingWord}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add New Word</DialogTitle>
-            
+            <DialogTitle>Add New Vocabulary</DialogTitle>
+            <DialogDescription>
+              Add Korean word or sentence with English translation
+            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label htmlFor="word" className="text-sm font-medium">Word*</label>
-              <Input id="word" value={newWord.word} onChange={e => setNewWord({
-              ...newWord,
-              word: e.target.value
-            })} placeholder="Enter word" />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="word">Korean (Hangul) *</Label>
+                <Input 
+                  id="word" 
+                  value={newWord.word} 
+                  onChange={e => setNewWord({ ...newWord, word: e.target.value })} 
+                  placeholder="안녕하세요" 
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="phonetic">Romanization</Label>
+                <Input 
+                  id="phonetic" 
+                  value={newWord.phonetic} 
+                  onChange={e => setNewWord({ ...newWord, phonetic: e.target.value })} 
+                  placeholder="annyeonghaseyo" 
+                />
+              </div>
             </div>
             
             <div className="space-y-2">
-              <label htmlFor="definition" className="text-sm font-medium">Definition*</label>
-              <Textarea id="definition" value={newWord.definition} onChange={e => setNewWord({
-              ...newWord,
-              definition: e.target.value
-            })} placeholder="Enter definition" rows={3} />
+              <Label htmlFor="definition">English Meaning *</Label>
+              <Textarea 
+                id="definition" 
+                value={newWord.definition} 
+                onChange={e => setNewWord({ ...newWord, definition: e.target.value })} 
+                placeholder="Hello" 
+                rows={2} 
+              />
             </div>
             
             <div className="space-y-2">
-              <label htmlFor="phonetic" className="text-sm font-medium">Meaning </label>
-              <Input id="phonetic" value={newWord.phonetic} onChange={e => setNewWord({
-              ...newWord,
-              phonetic: e.target.value
-            })} placeholder="Enter phonetic pronunciation" />
+              <Label htmlFor="example-korean">Example Sentence (Korean)</Label>
+              <Textarea 
+                id="example-korean" 
+                value={newWord.example} 
+                onChange={e => setNewWord({ ...newWord, example: e.target.value })} 
+                placeholder="오늘 날씨가 좋아요" 
+                rows={2} 
+              />
             </div>
             
             <div className="space-y-2">
-              <label htmlFor="example" className="text-sm font-medium">Example</label>
-              <Textarea id="example" value={newWord.example} onChange={e => setNewWord({
-              ...newWord,
-              example: e.target.value
-            })} placeholder="Enter example sentence" rows={2} />
+              <Label htmlFor="example-english">Example Sentence (English)</Label>
+              <Textarea 
+                id="example-english" 
+                value={newWord.notes} 
+                onChange={e => setNewWord({ ...newWord, notes: e.target.value })} 
+                placeholder="The weather is nice today" 
+                rows={2} 
+              />
             </div>
             
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Difficulty Level: {newWord.difficulty}/5</Label>
+                <Slider 
+                  value={[newWord.difficulty || 3]} 
+                  onValueChange={(value) => setNewWord({ ...newWord, difficulty: value[0] })}
+                  min={1}
+                  max={5}
+                  step={1}
+                  className="py-4"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Easy</span>
+                  <span>Hard</span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Priority: {newWord.priority}/5</Label>
+                <Slider 
+                  value={[newWord.priority || 3]} 
+                  onValueChange={(value) => setNewWord({ ...newWord, priority: value[0] })}
+                  min={1}
+                  max={5}
+                  step={1}
+                  className="py-4"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Low</span>
+                  <span>High</span>
+                </div>
+              </div>
+            </div>
             
+            <div className="space-y-2">
+              <Label htmlFor="topik">TOPIK Level</Label>
+              <Select 
+                value={newWord.topikLevel || ''} 
+                onValueChange={(value) => setNewWord({ ...newWord, topikLevel: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select TOPIK level (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No TOPIK</SelectItem>
+                  <SelectItem value="TOPIK-1">TOPIK-1</SelectItem>
+                  <SelectItem value="TOPIK-2">TOPIK-2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="tags">Tags</Label>
+              <div className="flex gap-2">
+                <Input 
+                  id="tags"
+                  value={tagInput}
+                  onChange={e => setTagInput(e.target.value)}
+                  onKeyPress={e => {
+                    if (e.key === 'Enter' && tagInput.trim()) {
+                      e.preventDefault();
+                      const currentTags = newWord.tags || [];
+                      if (!currentTags.includes(tagInput.trim())) {
+                        setNewWord({ ...newWord, tags: [...currentTags, tagInput.trim()] });
+                      }
+                      setTagInput('');
+                    }
+                  }}
+                  placeholder="Add tags (press Enter)"
+                />
+                <Button 
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    if (tagInput.trim()) {
+                      const currentTags = newWord.tags || [];
+                      if (!currentTags.includes(tagInput.trim())) {
+                        setNewWord({ ...newWord, tags: [...currentTags, tagInput.trim()] });
+                      }
+                      setTagInput('');
+                    }
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+              {newWord.tags && newWord.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {newWord.tags.map((tag, index) => (
+                    <Badge 
+                      key={index} 
+                      variant="secondary"
+                      className="cursor-pointer"
+                      onClick={() => {
+                        const updatedTags = newWord.tags?.filter((_, i) => i !== index);
+                        setNewWord({ ...newWord, tags: updatedTags });
+                      }}
+                    >
+                      {tag} ×
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddingWord(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsAddingWord(false);
+              setTagInput('');
+            }}>
               Cancel
             </Button>
             <Button onClick={handleAddWord}>
