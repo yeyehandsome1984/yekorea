@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Book, BookMarked, Calendar, LineChart, Play, Sparkles, Save, ArchiveRestore, Settings, Download, Upload, Languages } from 'lucide-react';
+import { Book, BookMarked, Calendar, LineChart, Play, Sparkles, Save, ArchiveRestore, Settings, Download, Upload, Languages, GraduationCap } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import FeatureCard from '@/components/home/FeatureCard';
 import Navbar from '@/components/layout/Navbar';
@@ -372,6 +372,12 @@ const Index = () => {
     icon: LineChart,
     to: '/progress',
     gradient: 'gradient-pink'
+  }, {
+    title: 'TOPIK Resources',
+    description: 'Sample questions, essays, topics, and idioms for TOPIK prep',
+    icon: GraduationCap,
+    to: '/topik-resources',
+    gradient: 'gradient-indigo'
   }];
   return <div className="min-h-screen bg-gray-50">
       <Navbar />
