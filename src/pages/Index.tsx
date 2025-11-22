@@ -330,25 +330,25 @@ const Index = () => {
   };
   const features = [{
     title: 'My Chapters',
-    description: 'Browse and manage all your learning chapters',
+    description: 'Browse and manage Korean vocabulary chapters',
     icon: Book,
     to: '/chapters',
     gradient: 'gradient-blue'
   }, {
     title: 'Learning Plans',
-    description: 'Create and follow structured learning paths',
+    description: 'Create structured Korean learning paths',
     icon: Calendar,
     to: '/learning-plans',
     gradient: 'gradient-purple'
   }, {
     title: 'Daily Revision',
-    description: 'Review words with spaced repetition',
+    description: 'Review Korean words with spaced repetition',
     icon: Play,
     to: '/daily-revision',
     gradient: 'gradient-green'
   }, {
     title: 'Spelling',
-    description: 'Practice your spelling with interactive exercises',
+    description: 'Practice Korean spelling with interactive exercises',
     icon: Sparkles,
     to: SPELLING_APP_URL,
     gradient: 'gradient-red',
@@ -356,13 +356,13 @@ const Index = () => {
     openInSamePage: true // Set this to true to open in same page
   }, {
     title: 'Bookmarks',
-    description: 'Access your saved words in one place',
+    description: 'Access your saved Korean words in one place',
     icon: BookMarked,
     to: '/bookmarks',
     gradient: 'gradient-orange'
   }, {
     title: 'Progress',
-    description: 'Track your learning stats and achievements',
+    description: 'Track your Korean learning stats and achievements',
     icon: LineChart,
     to: '/progress',
     gradient: 'gradient-pink'

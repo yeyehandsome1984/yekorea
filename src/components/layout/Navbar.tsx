@@ -67,7 +67,7 @@ const Navbar = () => {
             <div className="flex-shrink-0 flex items-center">
               <Link to="/" className="flex items-center space-x-2">
                 <Book className="h-6 w-6 text-primary rounded-md" />
-                <span className="font-bold text-lg text-gray-900">SSC Vocab</span>
+                <span className="font-bold text-lg text-gray-900">叶之寒雪</span>
               </Link>
             </div>
             <nav className="hidden sm:ml-6 sm:flex sm:space-x-8">
@@ -111,9 +111,9 @@ const Navbar = () => {
                 </SheetTrigger>
                 <SheetContent>
                   <SheetHeader>
-                    <SheetTitle>LinguaLearn</SheetTitle>
+                    <SheetTitle>叶之寒雪</SheetTitle>
                     <SheetDescription>
-                      Your personalized language learning companion
+                      Your Korean learning companion
                     </SheetDescription>
                   </SheetHeader>
                   <div className="mt-6 flex flex-col space-y-3">
