@@ -53,6 +53,7 @@ const Navbar = () => {
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'Chapters', path: '/chapters' },
+    { name: 'Sentences', path: '/sentences' },
     { name: 'Learning Plans', path: '/learning-plans' },
     { name: 'Daily Revision', path: '/daily-revision' },
     { name: 'Bookmarks', path: '/bookmarks' },

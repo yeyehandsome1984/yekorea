@@ -16,6 +16,7 @@ import Bookmarks from "./pages/Bookmarks";
 import Progress from "./pages/Progress";
 import QuizMode from "./pages/QuizMode";
 import Auth from "./pages/Auth";
+import Sentences from "./pages/Sentences";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => {
             <Route path="/" element={<Index />} />
             <Route path="/chapters" element={<Chapters />} />
             <Route path="/chapters/:chapterId" element={<ChapterDetail />} />
+            <Route path="/sentences" element={<Sentences />} />
             <Route path="/learning-plans" element={<LearningPlans />} />
             <Route path="/daily-revision" element={<DailyRevision />} />
             <Route path="/bookmarks" element={<Bookmarks />} />
