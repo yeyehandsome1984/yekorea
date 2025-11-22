@@ -129,6 +129,14 @@
   @apply bg-gradient-to-br from-red-400 to-rose-600 shadow-lg shadow-red-500/30;
 }
 
+.gradient-teal {
+  @apply bg-gradient-to-br from-teal-400 to-cyan-600 shadow-lg shadow-teal-500/30;
+}
+
+.gradient-indigo {
+  @apply bg-gradient-to-br from-indigo-400 to-purple-600 shadow-lg shadow-indigo-500/30;
+}
+
 .card-hover {
   @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
 }
