@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Search, Filter, BookOpen, X } from "lucide-react";
+import { Plus, Search, Filter, BookOpen, X, Languages, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,6 +69,7 @@ const Sentences = () => {
   const [sentences, setSentences] = useState<Sentence[]>([]);
   const [availableWords, setAvailableWords] = useState<Word[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingSentence, setEditingSentence] = useState<Sentence | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterTopik, setFilterTopik] = useState<string>("all");
@@ -131,14 +132,24 @@ const Sentences = () => {
       return;
     }
 
-    const sentence: Sentence = {
-      ...newSentence,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString()
-    };
-
-    const updatedSentences = [...sentences, sentence];
-    saveSentences(updatedSentences);
+    if (editingSentence) {
+      // Update existing sentence
+      const updatedSentences = sentences.map(s =>
+        s.id === editingSentence.id ? { ...newSentence, id: s.id, createdAt: s.createdAt } : s
+      );
+      saveSentences(updatedSentences);
+      toast.success("Sentence updated successfully!");
+    } else {
+      // Add new sentence
+      const sentence: Sentence = {
+        ...newSentence,
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString()
+      };
+      const updatedSentences = [...sentences, sentence];
+      saveSentences(updatedSentences);
+      toast.success("Sentence added successfully!");
+    }
     
     setNewSentence({
       korean: "",
@@ -154,8 +165,26 @@ const Sentences = () => {
       linkedVocabulary: []
     });
     setTagInput("");
+    setEditingSentence(null);
     setIsDialogOpen(false);
-    toast.success("Sentence added successfully!");
+  };
+
+  const handleEditSentence = (sentence: Sentence) => {
+    setEditingSentence(sentence);
+    setNewSentence({
+      korean: sentence.korean,
+      english: sentence.english,
+      chinese: sentence.chinese,
+      grammarPoints: sentence.grammarPoints,
+      topic: sentence.topic,
+      topikLevel: sentence.topikLevel,
+      category: sentence.category,
+      difficulty: sentence.difficulty,
+      notes: sentence.notes,
+      tags: sentence.tags,
+      linkedVocabulary: sentence.linkedVocabulary
+    });
+    setIsDialogOpen(true);
   };
 
   const handleDeleteSentence = (id: string) => {
@@ -214,12 +243,34 @@ const Sentences = () => {
       <div className="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Korean Sentences</h1>
-            <p className="text-muted-foreground">Learn and practice Korean sentences with linked vocabulary</p>
+          <div className="flex items-center gap-3">
+            <Languages className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1">Korean Sentences</h1>
+              <p className="text-sm text-muted-foreground">Learn and practice Korean sentences with linked vocabulary</p>
+            </div>
           </div>
           
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) {
+              setEditingSentence(null);
+              setNewSentence({
+                korean: "",
+                english: "",
+                chinese: "",
+                grammarPoints: "",
+                topic: "",
+                topikLevel: "",
+                category: "",
+                difficulty: 3,
+                notes: "",
+                tags: [],
+                linkedVocabulary: []
+              });
+              setTagInput("");
+            }
+          }}>
             <DialogTrigger asChild>
               <Button className="w-full md:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
@@ -228,8 +279,10 @@ const Sentences = () => {
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Add New Sentence</DialogTitle>
-                <DialogDescription>Add a new Korean sentence with translations and details</DialogDescription>
+                <DialogTitle>{editingSentence ? "Edit Sentence" : "Add New Sentence"}</DialogTitle>
+                <DialogDescription>
+                  {editingSentence ? "Update the Korean sentence" : "Add a new Korean sentence with translations and details"}
+                </DialogDescription>
               </DialogHeader>
               
               <div className="space-y-4">
@@ -441,7 +494,9 @@ const Sentences = () => {
 
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                <Button onClick={handleAddSentence}>Add</Button>
+                <Button onClick={handleAddSentence}>
+                  {editingSentence ? "Update" : "Add"}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -505,21 +560,35 @@ const Sentences = () => {
               <Card key={sentence.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1 space-y-2">
-                      <CardTitle className="text-xl">{sentence.korean}</CardTitle>
-                      <CardDescription className="text-base">{sentence.english}</CardDescription>
+                    <div className="flex-1 space-y-1.5">
+                      <CardTitle className="text-base leading-relaxed line-clamp-2">
+                        {sentence.korean}
+                      </CardTitle>
+                      <CardDescription className="text-sm line-clamp-2">
+                        {sentence.english}
+                      </CardDescription>
                       {sentence.chinese && (
-                        <p className="text-sm text-muted-foreground">{sentence.chinese}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{sentence.chinese}</p>
                       )}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteSentence(sentence.id)}
-                      className="shrink-0"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditSentence(sentence)}
+                        className="h-8 w-8"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteSentence(sentence.id)}
+                        className="h-8 w-8"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 
