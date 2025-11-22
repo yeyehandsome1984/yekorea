@@ -54,6 +54,7 @@ const Navbar = () => {
     { name: 'Home', path: '/' },
     { name: 'Chapters', path: '/chapters' },
     { name: 'Sentences', path: '/sentences' },
+    { name: 'TOPIK Resources', path: '/topik-resources' },
     { name: 'Learning Plans', path: '/learning-plans' },
     { name: 'Daily Revision', path: '/daily-revision' },
     { name: 'Bookmarks', path: '/bookmarks' },
