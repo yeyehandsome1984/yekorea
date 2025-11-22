@@ -109,6 +109,63 @@ const initializeKoreanVocabulary = (chapters: Chapter[]) => {
         { id: crypto.randomUUID(), word: '지금 몇 시예요?', definition: 'What time is it now?', phonetic: 'jigeum myeot siyeyo', example: '실례합니다. 지금 몇 시예요?', notes: 'Time', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['sentence', 'time'], createdAt: new Date().toISOString(), priority: 4 },
         { id: crypto.randomUUID(), word: '맛있어요', definition: 'It\'s delicious', phonetic: 'masisseoyo', example: '이 음식 정말 맛있어요!', notes: 'Food', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['sentence', 'food'], createdAt: new Date().toISOString(), priority: 4 },
       ]
+    },
+    '4': { // Korean Idioms
+      id: '4',
+      title: 'Korean Idiom (한국 관용어)',
+      words: [
+        { id: crypto.randomUUID(), word: '금상첨화', definition: 'Adding flowers to brocade - making good even better', phonetic: 'geumsangcheomhwa', example: '좋은 성적에 장학금까지 받다니 금상첨화네요!', notes: 'Chinese character idiom', isBookmarked: false, difficulty: 4, topikLevel: 'TOPIK-2', tags: ['idiom', 'positive'], createdAt: new Date().toISOString(), priority: 3 },
+        { id: crypto.randomUUID(), word: '일석이조', definition: 'Killing two birds with one stone', phonetic: 'ilseogijo', example: '운동하면서 친구도 만나니 일석이조예요.', notes: 'Efficiency idiom', isBookmarked: false, difficulty: 3, topikLevel: 'TOPIK-2', tags: ['idiom', 'efficiency'], createdAt: new Date().toISOString(), priority: 4 },
+        { id: crypto.randomUUID(), word: '백문이불여일견', definition: 'Seeing once is better than hearing 100 times', phonetic: 'baengmunibeulyeoilgyeon', example: '한국 문화는 백문이불여일견입니다.', notes: 'Wisdom idiom', isBookmarked: false, difficulty: 4, topikLevel: 'TOPIK-2', tags: ['idiom', 'wisdom'], createdAt: new Date().toISOString(), priority: 3 },
+        { id: crypto.randomUUID(), word: '호랑이도 제 말 하면 온다', definition: 'Speak of the devil', phonetic: 'horangido je mal hamyeon onda', example: '진수 얘기하고 있었는데 호랑이도 제 말 하면 온다더니!', notes: 'Common saying', isBookmarked: false, difficulty: 3, topikLevel: 'TOPIK-2', tags: ['idiom', 'saying'], createdAt: new Date().toISOString(), priority: 3 },
+        { id: crypto.randomUUID(), word: '티끌 모아 태산', definition: 'Many drops make a shower', phonetic: 'tikkeul moa taesan', example: '작은 저축이라도 티끌 모아 태산이니까 계속하세요.', notes: 'Saving idiom', isBookmarked: false, difficulty: 3, topikLevel: 'TOPIK-2', tags: ['idiom', 'wisdom'], createdAt: new Date().toISOString(), priority: 4 },
+        { id: crypto.randomUUID(), word: '우물 안 개구리', definition: 'A frog in a well - limited perspective', phonetic: 'umul an gaeguri', example: '세계를 여행하면 우물 안 개구리에서 벗어날 수 있어요.', notes: 'Perspective idiom', isBookmarked: false, difficulty: 3, topikLevel: 'TOPIK-2', tags: ['idiom', 'perspective'], createdAt: new Date().toISOString(), priority: 3 },
+        { id: crypto.randomUUID(), word: '눈 코 뜰 새 없다', definition: 'Too busy to even breathe', phonetic: 'nun ko tteul sae eopda', example: '시험 기간이라 눈 코 뜰 새 없이 바빠요.', notes: 'Busyness expression', isBookmarked: false, difficulty: 3, topikLevel: 'TOPIK-2', tags: ['idiom', 'busy'], createdAt: new Date().toISOString(), priority: 3 },
+        { id: crypto.randomUUID(), word: '새옹지마', definition: 'A blessing in disguise', phonetic: 'saeongjima', example: '시험에 떨어졌지만 새옹지마라고 더 좋은 기회가 올 거예요.', notes: 'Philosophy idiom', isBookmarked: false, difficulty: 4, topikLevel: 'TOPIK-2', tags: ['idiom', 'philosophy'], createdAt: new Date().toISOString(), priority: 2 },
+        { id: crypto.randomUUID(), word: '앞길이 창창하다', definition: 'To have a bright future ahead', phonetic: 'apgiri changchanghada', example: '젊으니까 앞길이 창창해요!', notes: 'Positive future', isBookmarked: false, difficulty: 3, topikLevel: 'TOPIK-2', tags: ['idiom', 'positive'], createdAt: new Date().toISOString(), priority: 2 },
+        { id: crypto.randomUUID(), word: '손이 크다', definition: 'To be generous with portions/spending', phonetic: 'soni keuda', example: '우리 엄마는 손이 커서 음식을 많이 만드세요.', notes: 'Generosity idiom', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-2', tags: ['idiom', 'personality'], createdAt: new Date().toISOString(), priority: 3 },
+        { id: crypto.randomUUID(), word: '발이 넓다', definition: 'To have a wide network of connections', phonetic: 'bari neolda', example: '그 사람은 발이 넓어서 모르는 사람이 없어요.', notes: 'Network idiom', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-2', tags: ['idiom', 'social'], createdAt: new Date().toISOString(), priority: 3 },
+        { id: crypto.randomUUID(), word: '귀가 얇다', definition: 'To be easily influenced', phonetic: 'gwiga yalda', example: '귀가 얇아서 다른 사람 말을 잘 믿어요.', notes: 'Personality idiom', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-2', tags: ['idiom', 'personality'], createdAt: new Date().toISOString(), priority: 2 },
+      ]
+    },
+    '5': { // Korean Verbs
+      id: '5',
+      title: 'Korean Verb (한국어 동사)',
+      words: [
+        { id: crypto.randomUUID(), word: '가다', definition: 'to go', phonetic: 'gada', example: '학교에 가다 (go to school)', notes: 'Basic verb', isBookmarked: false, difficulty: 1, topikLevel: 'TOPIK-1', tags: ['verb', 'basic', 'movement'], createdAt: new Date().toISOString(), priority: 5 },
+        { id: crypto.randomUUID(), word: '오다', definition: 'to come', phonetic: 'oda', example: '친구가 오다 (friend comes)', notes: 'Basic verb', isBookmarked: false, difficulty: 1, topikLevel: 'TOPIK-1', tags: ['verb', 'basic', 'movement'], createdAt: new Date().toISOString(), priority: 5 },
+        { id: crypto.randomUUID(), word: '먹다', definition: 'to eat', phonetic: 'meokda', example: '밥을 먹다 (eat rice/meal)', notes: 'Daily verb', isBookmarked: false, difficulty: 1, topikLevel: 'TOPIK-1', tags: ['verb', 'basic', 'food'], createdAt: new Date().toISOString(), priority: 5 },
+        { id: crypto.randomUUID(), word: '마시다', definition: 'to drink', phonetic: 'masida', example: '물을 마시다 (drink water)', notes: 'Daily verb', isBookmarked: false, difficulty: 1, topikLevel: 'TOPIK-1', tags: ['verb', 'basic', 'food'], createdAt: new Date().toISOString(), priority: 5 },
+        { id: crypto.randomUUID(), word: '하다', definition: 'to do', phonetic: 'hada', example: '공부하다 (to study)', notes: 'Most common verb', isBookmarked: false, difficulty: 1, topikLevel: 'TOPIK-1', tags: ['verb', 'basic', 'action'], createdAt: new Date().toISOString(), priority: 5 },
+        { id: crypto.randomUUID(), word: '보다', definition: 'to see/watch', phonetic: 'boda', example: '영화를 보다 (watch a movie)', notes: 'Perception verb', isBookmarked: false, difficulty: 1, topikLevel: 'TOPIK-1', tags: ['verb', 'basic', 'perception'], createdAt: new Date().toISOString(), priority: 5 },
+        { id: crypto.randomUUID(), word: '듣다', definition: 'to listen/hear', phonetic: 'deutda', example: '음악을 듣다 (listen to music)', notes: 'Perception verb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['verb', 'basic', 'perception'], createdAt: new Date().toISOString(), priority: 5 },
+        { id: crypto.randomUUID(), word: '말하다', definition: 'to speak/say', phonetic: 'malhada', example: '한국어로 말하다 (speak in Korean)', notes: 'Communication verb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['verb', 'communication'], createdAt: new Date().toISOString(), priority: 5 },
+        { id: crypto.randomUUID(), word: '쓰다', definition: 'to write', phonetic: 'sseuda', example: '편지를 쓰다 (write a letter)', notes: 'Communication verb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['verb', 'communication'], createdAt: new Date().toISOString(), priority: 4 },
+        { id: crypto.randomUUID(), word: '읽다', definition: 'to read', phonetic: 'ikda', example: '책을 읽다 (read a book)', notes: 'Communication verb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['verb', 'communication'], createdAt: new Date().toISOString(), priority: 4 },
+        { id: crypto.randomUUID(), word: '살다', definition: 'to live', phonetic: 'salda', example: '서울에 살다 (live in Seoul)', notes: 'State verb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['verb', 'state'], createdAt: new Date().toISOString(), priority: 4 },
+        { id: crypto.randomUUID(), word: '좋아하다', definition: 'to like', phonetic: 'johahada', example: '한국을 좋아하다 (like Korea)', notes: 'Emotion verb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['verb', 'emotion'], createdAt: new Date().toISOString(), priority: 5 },
+        { id: crypto.randomUUID(), word: '사랑하다', definition: 'to love', phonetic: 'saranghada', example: '가족을 사랑하다 (love family)', notes: 'Emotion verb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['verb', 'emotion'], createdAt: new Date().toISOString(), priority: 3 },
+        { id: crypto.randomUUID(), word: '배우다', definition: 'to learn', phonetic: 'baeuda', example: '한국어를 배우다 (learn Korean)', notes: 'Action verb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['verb', 'education'], createdAt: new Date().toISOString(), priority: 5 },
+        { id: crypto.randomUUID(), word: '가르치다', definition: 'to teach', phonetic: 'gareuchida', example: '학생들을 가르치다 (teach students)', notes: 'Action verb', isBookmarked: false, difficulty: 3, topikLevel: 'TOPIK-1', tags: ['verb', 'education'], createdAt: new Date().toISOString(), priority: 3 },
+      ]
+    },
+    '6': { // Korean Adverbs
+      id: '6',
+      title: 'Key Korean Adverb (주요 한국어 부사)',
+      words: [
+        { id: crypto.randomUUID(), word: '아주', definition: 'very, quite', phonetic: 'aju', example: '아주 좋아요 (very good)', notes: 'Degree adverb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['adverb', 'degree'], createdAt: new Date().toISOString(), priority: 5 },
+        { id: crypto.randomUUID(), word: '매우', definition: 'very, extremely', phonetic: 'maeu', example: '매우 중요해요 (very important)', notes: 'Formal degree adverb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['adverb', 'degree'], createdAt: new Date().toISOString(), priority: 4 },
+        { id: crypto.randomUUID(), word: '정말', definition: 'really, truly', phonetic: 'jeongmal', example: '정말 맛있어요 (really delicious)', notes: 'Emphasis adverb', isBookmarked: false, difficulty: 1, topikLevel: 'TOPIK-1', tags: ['adverb', 'emphasis'], createdAt: new Date().toISOString(), priority: 5 },
+        { id: crypto.randomUUID(), word: '너무', definition: 'too, so much', phonetic: 'neomu', example: '너무 비싸요 (too expensive)', notes: 'Excessive adverb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['adverb', 'degree'], createdAt: new Date().toISOString(), priority: 5 },
+        { id: crypto.randomUUID(), word: '아마', definition: 'perhaps, probably', phonetic: 'ama', example: '아마 내일 올 거예요 (probably come tomorrow)', notes: 'Probability adverb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['adverb', 'probability'], createdAt: new Date().toISOString(), priority: 4 },
+        { id: crypto.randomUUID(), word: '항상', definition: 'always', phonetic: 'hangsang', example: '항상 행복하세요 (always be happy)', notes: 'Frequency adverb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['adverb', 'frequency'], createdAt: new Date().toISOString(), priority: 4 },
+        { id: crypto.randomUUID(), word: '자주', definition: 'often, frequently', phonetic: 'jaju', example: '자주 운동해요 (exercise often)', notes: 'Frequency adverb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['adverb', 'frequency'], createdAt: new Date().toISOString(), priority: 4 },
+        { id: crypto.randomUUID(), word: '가끔', definition: 'sometimes, occasionally', phonetic: 'gakkeum', example: '가끔 영화를 봐요 (watch movies sometimes)', notes: 'Frequency adverb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['adverb', 'frequency'], createdAt: new Date().toISOString(), priority: 4 },
+        { id: crypto.randomUUID(), word: '빨리', definition: 'quickly, fast', phonetic: 'ppalli', example: '빨리 와요 (come quickly)', notes: 'Manner adverb', isBookmarked: false, difficulty: 1, topikLevel: 'TOPIK-1', tags: ['adverb', 'manner'], createdAt: new Date().toISOString(), priority: 5 },
+        { id: crypto.randomUUID(), word: '천천히', definition: 'slowly', phonetic: 'cheoncheonhi', example: '천천히 말해 주세요 (speak slowly please)', notes: 'Manner adverb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['adverb', 'manner'], createdAt: new Date().toISOString(), priority: 5 },
+        { id: crypto.randomUUID(), word: '특히', definition: 'especially, particularly', phonetic: 'teuki', example: '특히 한국 음식을 좋아해요 (especially like Korean food)', notes: 'Emphasis adverb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['adverb', 'emphasis'], createdAt: new Date().toISOString(), priority: 3 },
+        { id: crypto.randomUUID(), word: '거의', definition: 'almost, nearly', phonetic: 'geoui', example: '거의 다 했어요 (almost finished)', notes: 'Degree adverb', isBookmarked: false, difficulty: 2, topikLevel: 'TOPIK-1', tags: ['adverb', 'degree'], createdAt: new Date().toISOString(), priority: 3 },
+      ]
     }
   };
 
@@ -166,6 +223,24 @@ const Chapters = () => {
       wordCount: 18,
       progress: 0,
       isBookmarked: true
+    }, {
+      id: '4',
+      title: 'Korean Idiom (한국 관용어)',
+      wordCount: 12,
+      progress: 0,
+      isBookmarked: false
+    }, {
+      id: '5',
+      title: 'Korean Verb (한국어 동사)',
+      wordCount: 15,
+      progress: 0,
+      isBookmarked: false
+    }, {
+      id: '6',
+      title: 'Key Korean Adverb (주요 한국어 부사)',
+      wordCount: 12,
+      progress: 0,
+      isBookmarked: false
     }];
 
     // Initialize with preset Korean vocabulary
