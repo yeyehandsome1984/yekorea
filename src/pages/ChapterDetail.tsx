@@ -1123,14 +1123,14 @@ const ChapterDetail = () => {
             <div className="space-y-2">
               <Label htmlFor="topik">TOPIK Level</Label>
               <Select 
-                value={newWord.topikLevel || ''} 
-                onValueChange={(value) => setNewWord({ ...newWord, topikLevel: value })}
+                value={newWord.topikLevel || 'none'} 
+                onValueChange={(value) => setNewWord({ ...newWord, topikLevel: value === 'none' ? '' : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select TOPIK level (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No TOPIK</SelectItem>
+                  <SelectItem value="none">No TOPIK</SelectItem>
                   <SelectItem value="TOPIK-1">TOPIK-1</SelectItem>
                   <SelectItem value="TOPIK-2">TOPIK-2</SelectItem>
                 </SelectContent>
