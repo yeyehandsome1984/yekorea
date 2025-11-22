@@ -244,7 +244,9 @@ const Sentences = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <Languages className="h-8 w-8 text-primary" />
+            <div className="p-3 rounded-full bg-gradient-to-br from-teal-500 to-teal-600">
+              <Languages className="h-6 w-6 text-white" />
+            </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1">Korean Sentences</h1>
               <p className="text-sm text-muted-foreground">Learn and practice Korean sentences with linked vocabulary</p>
@@ -540,9 +542,9 @@ const Sentences = () => {
         </div>
 
         {/* Sentences List */}
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredSentences.length === 0 ? (
-            <Card>
+            <Card className="md:col-span-2">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-lg font-medium mb-2">No sentences yet</p>
@@ -560,11 +562,11 @@ const Sentences = () => {
               <Card key={sentence.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1 space-y-1.5">
-                      <CardTitle className="text-base leading-relaxed line-clamp-2">
+                    <div className="flex-1 space-y-1">
+                      <CardTitle className="text-sm leading-relaxed line-clamp-2">
                         {sentence.korean}
                       </CardTitle>
-                      <CardDescription className="text-sm line-clamp-2">
+                      <CardDescription className="text-xs line-clamp-2">
                         {sentence.english}
                       </CardDescription>
                       {sentence.chinese && (
@@ -592,9 +594,9 @@ const Sentences = () => {
                   </div>
                 </CardHeader>
                 
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-2">
                   {/* Info Grid */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
                     {sentence.grammarPoints && (
                       <div>
                         <span className="text-muted-foreground">Grammar:</span>
@@ -622,13 +624,13 @@ const Sentences = () => {
                   </div>
 
                   {/* Difficulty */}
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-xs">
                     <span className="text-muted-foreground">Difficulty:</span>
                     <div className="flex gap-1">
                       {[...Array(5)].map((_, i) => (
                         <div
                           key={i}
-                          className={`w-2 h-2 rounded-full ${
+                          className={`w-1.5 h-1.5 rounded-full ${
                             i < sentence.difficulty ? 'bg-primary' : 'bg-muted'
                           }`}
                         />
@@ -639,11 +641,11 @@ const Sentences = () => {
                   {/* Linked Vocabulary */}
                   {sentence.linkedVocabulary.length > 0 && (
                     <div>
-                      <p className="text-sm text-muted-foreground mb-2">Linked Vocabulary:</p>
-                      <div className="flex flex-wrap gap-2">
+                      <p className="text-xs text-muted-foreground mb-1">Linked Vocabulary:</p>
+                      <div className="flex flex-wrap gap-1">
                         {getLinkedWords(sentence.linkedVocabulary).map(word => (
-                          <Badge key={word.id} variant="secondary">
-                            {word.word} - {word.definition}
+                          <Badge key={word.id} variant="secondary" className="text-xs px-2 py-0">
+                            {word.word}
                           </Badge>
                         ))}
                       </div>
@@ -652,9 +654,9 @@ const Sentences = () => {
 
                   {/* Tags */}
                   {sentence.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1">
                       {sentence.tags.map(tag => (
-                        <Badge key={tag} variant="outline">#{tag}</Badge>
+                        <Badge key={tag} variant="outline" className="text-xs px-1.5 py-0">#{tag}</Badge>
                       ))}
                     </div>
                   )}
@@ -662,7 +664,7 @@ const Sentences = () => {
                   {/* Notes */}
                   {sentence.notes && (
                     <div className="pt-2 border-t">
-                      <p className="text-sm text-muted-foreground">{sentence.notes}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{sentence.notes}</p>
                     </div>
                   )}
                 </CardContent>
