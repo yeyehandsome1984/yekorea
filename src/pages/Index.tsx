@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Book, BookMarked, Calendar, LineChart, Play, Sparkles, Save, ArchiveRestore, Settings, Download, Upload, FileText } from 'lucide-react';
+import { Book, BookMarked, Calendar, LineChart, Play, Sparkles, Save, ArchiveRestore, Settings, Download, Upload, Languages } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import FeatureCard from '@/components/home/FeatureCard';
 import Navbar from '@/components/layout/Navbar';
@@ -337,7 +337,7 @@ const Index = () => {
   }, {
     title: 'Korean Sentences',
     description: 'Learn complete sentences with linked vocabulary',
-    icon: FileText,
+    icon: Languages,
     to: '/sentences',
     gradient: 'gradient-teal'
   }, {
