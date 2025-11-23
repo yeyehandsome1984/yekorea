@@ -67,6 +67,19 @@ interface Idiom {
 }
 
 const TopikResources = () => {
+  // Dialog states
+  const [openQuestionDialog, setOpenQuestionDialog] = useState(false);
+  const [openEssayDialog, setOpenEssayDialog] = useState(false);
+  const [openTopicDialog, setOpenTopicDialog] = useState(false);
+  const [openIdiomDialog, setOpenIdiomDialog] = useState(false);
+
+  // Form states for new items
+  const [newQuestion, setNewQuestion] = useState<Partial<Question>>({});
+  const [newEssay, setNewEssay] = useState<Partial<Essay>>({});
+  const [newTopic, setNewTopic] = useState<Partial<EssayTopic>>({ keywords: [] });
+  const [newIdiom, setNewIdiom] = useState<Partial<Idiom>>({});
+  const [keywordInput, setKeywordInput] = useState('');
+
   const [questions, setQuestions] = useState<Question[]>([
     {
       id: '1',
@@ -219,6 +232,103 @@ const TopikResources = () => {
     }
   ]);
 
+  // Handler functions
+  const handleAddQuestion = () => {
+    if (!newQuestion.question || !newQuestion.answer) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    const question: Question = {
+      id: Date.now().toString(),
+      year: newQuestion.year || '',
+      level: newQuestion.level || '',
+      type: newQuestion.type || '',
+      question: newQuestion.question,
+      answer: newQuestion.answer,
+      explanation: newQuestion.explanation || ''
+    };
+    setQuestions([...questions, question]);
+    setNewQuestion({});
+    setOpenQuestionDialog(false);
+    toast.success("Question added successfully");
+  };
+
+  const handleAddEssay = () => {
+    if (!newEssay.topic || !newEssay.essayText) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    const essay: Essay = {
+      id: Date.now().toString(),
+      year: newEssay.year || '',
+      level: newEssay.level || '',
+      topic: newEssay.topic,
+      essayText: newEssay.essayText,
+      score: newEssay.score || '',
+      notes: newEssay.notes || ''
+    };
+    setEssays([...essays, essay]);
+    setNewEssay({});
+    setOpenEssayDialog(false);
+    toast.success("Essay added successfully");
+  };
+
+  const handleAddTopic = () => {
+    if (!newTopic.topic) {
+      toast.error("Please fill in the topic");
+      return;
+    }
+    const topic: EssayTopic = {
+      id: Date.now().toString(),
+      year: newTopic.year || '',
+      level: newTopic.level || '',
+      topic: newTopic.topic,
+      keywords: newTopic.keywords || []
+    };
+    setTopics([...topics, topic]);
+    setNewTopic({ keywords: [] });
+    setKeywordInput('');
+    setOpenTopicDialog(false);
+    toast.success("Topic added successfully");
+  };
+
+  const handleAddKeyword = () => {
+    if (keywordInput.trim() && newTopic.keywords) {
+      setNewTopic({
+        ...newTopic,
+        keywords: [...newTopic.keywords, keywordInput.trim()]
+      });
+      setKeywordInput('');
+    }
+  };
+
+  const handleRemoveKeyword = (index: number) => {
+    if (newTopic.keywords) {
+      setNewTopic({
+        ...newTopic,
+        keywords: newTopic.keywords.filter((_, i) => i !== index)
+      });
+    }
+  };
+
+  const handleAddIdiom = () => {
+    if (!newIdiom.korean || !newIdiom.meaning) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    const idiom: Idiom = {
+      id: Date.now().toString(),
+      korean: newIdiom.korean,
+      meaning: newIdiom.meaning,
+      example: newIdiom.example || '',
+      category: newIdiom.category || ''
+    };
+    setIdioms([...idioms, idiom]);
+    setNewIdiom({});
+    setOpenIdiomDialog(false);
+    toast.success("Idiom added successfully");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -260,10 +370,85 @@ const TopikResources = () => {
           <TabsContent value="questions" className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Past TOPIK Questions</h2>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Question
-              </Button>
+              <Dialog open={openQuestionDialog} onOpenChange={setOpenQuestionDialog}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Question
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Add New Question</DialogTitle>
+                    <DialogDescription>Add a sample TOPIK question</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="q-year">Year</Label>
+                        <Input
+                          id="q-year"
+                          value={newQuestion.year || ''}
+                          onChange={(e) => setNewQuestion({ ...newQuestion, year: e.target.value })}
+                          placeholder="2023"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="q-level">Level</Label>
+                        <Input
+                          id="q-level"
+                          value={newQuestion.level || ''}
+                          onChange={(e) => setNewQuestion({ ...newQuestion, level: e.target.value })}
+                          placeholder="TOPIK II"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="q-type">Type</Label>
+                        <Input
+                          id="q-type"
+                          value={newQuestion.type || ''}
+                          onChange={(e) => setNewQuestion({ ...newQuestion, type: e.target.value })}
+                          placeholder="Reading"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="q-question">Question *</Label>
+                      <Textarea
+                        id="q-question"
+                        value={newQuestion.question || ''}
+                        onChange={(e) => setNewQuestion({ ...newQuestion, question: e.target.value })}
+                        placeholder="Enter the question text..."
+                        rows={3}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="q-answer">Answer *</Label>
+                      <Textarea
+                        id="q-answer"
+                        value={newQuestion.answer || ''}
+                        onChange={(e) => setNewQuestion({ ...newQuestion, answer: e.target.value })}
+                        placeholder="Enter the answer..."
+                        rows={2}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="q-explanation">Explanation</Label>
+                      <Textarea
+                        id="q-explanation"
+                        value={newQuestion.explanation || ''}
+                        onChange={(e) => setNewQuestion({ ...newQuestion, explanation: e.target.value })}
+                        placeholder="Enter explanation (optional)..."
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setOpenQuestionDialog(false)}>Cancel</Button>
+                    <Button onClick={handleAddQuestion}>Add Question</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
 
             {questions.length === 0 ? (
@@ -322,10 +507,84 @@ const TopikResources = () => {
           <TabsContent value="essays" className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Past Year Essay Samples</h2>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Essay
-              </Button>
+              <Dialog open={openEssayDialog} onOpenChange={setOpenEssayDialog}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Essay
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Add Essay Sample</DialogTitle>
+                    <DialogDescription>Add a sample essay from past TOPIK exams</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="e-year">Year</Label>
+                        <Input
+                          id="e-year"
+                          value={newEssay.year || ''}
+                          onChange={(e) => setNewEssay({ ...newEssay, year: e.target.value })}
+                          placeholder="2023"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="e-level">Level</Label>
+                        <Input
+                          id="e-level"
+                          value={newEssay.level || ''}
+                          onChange={(e) => setNewEssay({ ...newEssay, level: e.target.value })}
+                          placeholder="TOPIK II"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="e-score">Score</Label>
+                        <Input
+                          id="e-score"
+                          value={newEssay.score || ''}
+                          onChange={(e) => setNewEssay({ ...newEssay, score: e.target.value })}
+                          placeholder="85/100"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="e-topic">Topic *</Label>
+                      <Input
+                        id="e-topic"
+                        value={newEssay.topic || ''}
+                        onChange={(e) => setNewEssay({ ...newEssay, topic: e.target.value })}
+                        placeholder="Essay topic..."
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="e-text">Essay Text *</Label>
+                      <Textarea
+                        id="e-text"
+                        value={newEssay.essayText || ''}
+                        onChange={(e) => setNewEssay({ ...newEssay, essayText: e.target.value })}
+                        placeholder="Enter the essay content..."
+                        rows={8}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="e-notes">Notes</Label>
+                      <Textarea
+                        id="e-notes"
+                        value={newEssay.notes || ''}
+                        onChange={(e) => setNewEssay({ ...newEssay, notes: e.target.value })}
+                        placeholder="Add notes or comments (optional)..."
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setOpenEssayDialog(false)}>Cancel</Button>
+                    <Button onClick={handleAddEssay}>Add Essay</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
 
             {essays.length === 0 ? (
@@ -376,10 +635,85 @@ const TopikResources = () => {
           <TabsContent value="topics" className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Past Essay Topics</h2>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Topic
-              </Button>
+              <Dialog open={openTopicDialog} onOpenChange={setOpenTopicDialog}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Topic
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Add Essay Topic</DialogTitle>
+                    <DialogDescription>Add a topic from past TOPIK exams</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="t-year">Year</Label>
+                        <Input
+                          id="t-year"
+                          value={newTopic.year || ''}
+                          onChange={(e) => setNewTopic({ ...newTopic, year: e.target.value })}
+                          placeholder="2023"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="t-level">Level</Label>
+                        <Input
+                          id="t-level"
+                          value={newTopic.level || ''}
+                          onChange={(e) => setNewTopic({ ...newTopic, level: e.target.value })}
+                          placeholder="TOPIK II"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="t-topic">Topic *</Label>
+                      <Textarea
+                        id="t-topic"
+                        value={newTopic.topic || ''}
+                        onChange={(e) => setNewTopic({ ...newTopic, topic: e.target.value })}
+                        placeholder="Essay topic..."
+                        rows={2}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="t-keywords">Keywords</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="t-keywords"
+                          value={keywordInput}
+                          onChange={(e) => setKeywordInput(e.target.value)}
+                          placeholder="Add a keyword..."
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddKeyword();
+                            }
+                          }}
+                        />
+                        <Button type="button" onClick={handleAddKeyword} size="sm">
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {newTopic.keywords && newTopic.keywords.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {newTopic.keywords.map((kw, idx) => (
+                            <Badge key={idx} variant="secondary" className="cursor-pointer" onClick={() => handleRemoveKeyword(idx)}>
+                              {kw} ×
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setOpenTopicDialog(false)}>Cancel</Button>
+                    <Button onClick={handleAddTopic}>Add Topic</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
 
             {topics.length === 0 ? (
@@ -433,10 +767,64 @@ const TopikResources = () => {
           <TabsContent value="idioms" className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Korean Idioms (관용어)</h2>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Idiom
-              </Button>
+              <Dialog open={openIdiomDialog} onOpenChange={setOpenIdiomDialog}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Idiom
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Add Korean Idiom</DialogTitle>
+                    <DialogDescription>Add a Korean idiom or saying</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="i-korean">Korean Idiom *</Label>
+                      <Input
+                        id="i-korean"
+                        value={newIdiom.korean || ''}
+                        onChange={(e) => setNewIdiom({ ...newIdiom, korean: e.target.value })}
+                        placeholder="금상첨화 (錦上添花)"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="i-meaning">Meaning *</Label>
+                      <Textarea
+                        id="i-meaning"
+                        value={newIdiom.meaning || ''}
+                        onChange={(e) => setNewIdiom({ ...newIdiom, meaning: e.target.value })}
+                        placeholder="English meaning..."
+                        rows={2}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="i-example">Example Sentence</Label>
+                      <Textarea
+                        id="i-example"
+                        value={newIdiom.example || ''}
+                        onChange={(e) => setNewIdiom({ ...newIdiom, example: e.target.value })}
+                        placeholder="Example usage in Korean..."
+                        rows={2}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="i-category">Category</Label>
+                      <Input
+                        id="i-category"
+                        value={newIdiom.category || ''}
+                        onChange={(e) => setNewIdiom({ ...newIdiom, category: e.target.value })}
+                        placeholder="Positive, Wisdom, etc."
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setOpenIdiomDialog(false)}>Cancel</Button>
+                    <Button onClick={handleAddIdiom}>Add Idiom</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
 
             {idioms.length === 0 ? (
