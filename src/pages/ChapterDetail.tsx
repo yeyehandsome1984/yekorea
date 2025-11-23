@@ -880,9 +880,8 @@ const ChapterDetail = () => {
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <div className="flex items-center gap-1 text-orange-600">
+                                        <div className="flex items-center text-orange-600">
                                           <Copy className="h-3.5 w-3.5" />
-                                          <span className="text-xs font-medium">{duplicateInfo.occurrenceCount}</span>
                                         </div>
                                       </TooltipTrigger>
                                       <TooltipContent>
@@ -963,9 +962,8 @@ const ChapterDetail = () => {
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
-                                          <div className="flex items-center gap-1 text-orange-600">
+                                          <div className="flex items-center text-orange-600">
                                             <Copy className="h-3.5 w-3.5" />
-                                            <span className="text-xs font-medium">{duplicateInfo.occurrenceCount}</span>
                                           </div>
                                         </TooltipTrigger>
                                         <TooltipContent>
@@ -1050,9 +1048,8 @@ const ChapterDetail = () => {
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <div className="flex items-center gap-1 text-orange-600">
+                                        <div className="flex items-center text-orange-600">
                                           <Copy className="h-3.5 w-3.5" />
-                                          <span className="text-xs font-medium">{duplicateInfo.occurrenceCount}</span>
                                         </div>
                                       </TooltipTrigger>
                                       <TooltipContent>
