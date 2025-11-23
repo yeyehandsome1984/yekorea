@@ -60,30 +60,8 @@ const Index = () => {
           backup[key] = localStorage.getItem(key);
         }
       }
-      const {
-        data: {
-          session
-        }
-      } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Backup Failed",
-          description: "You must be logged in to create a backup.",
-          variant: "destructive"
-        });
-        return;
-      }
-      const {
-        error
-      } = await supabase.from('user_backups').upsert({
-        user_id: session.user.id,
-        backup_data: backup
-      }, {
-        onConflict: 'user_id'
-      });
-      if (error) {
-        throw error;
-      }
+      
+      // Just download the backup file - cloud backup removed since we're using shared DB now
       const backupBlob = new Blob([JSON.stringify(backup)], {
         type: 'application/json'
       });
@@ -97,7 +75,7 @@ const Index = () => {
       URL.revokeObjectURL(url);
       toast({
         title: "Backup Created",
-        description: "Your data has been successfully backed up to the cloud and downloaded."
+        description: "Your data has been successfully backed up and downloaded."
       });
     } catch (error) {
       toast({
@@ -109,70 +87,14 @@ const Index = () => {
     }
   };
   const handleRestoreFromCloud = async () => {
-    try {
-      const {
-        data: {
-          session
-        }
-      } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Restore Failed",
-          description: "You must be logged in to restore from cloud backup.",
-          variant: "destructive"
-        });
-        return;
-      }
-      const {
-        data: cloudBackupData,
-        error: fetchError
-      } = await supabase.from('user_backups').select('backup_data').eq('user_id', session.user.id).order('created_at', {
-        ascending: false
-      }).limit(1).single();
-      if (fetchError) {
-        throw fetchError;
-      }
-      if (!cloudBackupData) {
-        toast({
-          title: "No Backup Found",
-          description: "No cloud backup was found for your account.",
-          variant: "destructive"
-        });
-        return;
-      }
-      localStorage.clear();
-      Object.entries(cloudBackupData.backup_data).forEach(([key, value]) => {
-        localStorage.setItem(key, value as string);
-      });
-      toast({
-        title: "Backup Restored",
-        description: "Your data has been successfully restored."
-      });
-      window.location.reload();
-    } catch (error) {
-      toast({
-        title: "Restore Failed",
-        description: "There was an error restoring your backup.",
-        variant: "destructive"
-      });
-      console.error('Restore error:', error);
-    }
+    toast({
+      title: "Cloud Restore Not Available",
+      description: "Chapters are now stored in a shared global database. All devices automatically see the same data.",
+      variant: "default"
+    });
   };
   const handleRestoreFromFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      const {
-        data: {
-          session
-        }
-      } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Restore Failed",
-          description: "You must be logged in to restore from file backup.",
-          variant: "destructive"
-        });
-        return;
-      }
       const file = event.target.files?.[0];
       if (!file) {
         toast({
@@ -183,11 +105,10 @@ const Index = () => {
         return;
       }
       const fileContent = await file.text();
-      const backupData = {
-        backup_data: JSON.parse(fileContent)
-      };
+      const backupData = JSON.parse(fileContent);
+      
       localStorage.clear();
-      Object.entries(backupData.backup_data).forEach(([key, value]) => {
+      Object.entries(backupData).forEach(([key, value]) => {
         localStorage.setItem(key, value as string);
       });
       toast({
