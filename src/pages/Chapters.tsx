@@ -195,6 +195,7 @@ const Chapters = () => {
   const [importTab, setImportTab] = useState("file");
   const [manualImportText, setManualImportText] = useState("");
   const [user, setUser] = useAuthState<any>(null);
+  const [showFetchWarning, setShowFetchWarning] = useState(false);
   const [chapters, setChapters] = useState<Chapter[]>(() => {
     const savedChapters = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (savedChapters) {
@@ -574,7 +575,7 @@ const Chapters = () => {
       }
       if (dbData && dbData.length > 0 && dbData[0].data) {
         const parsedData = dbData[0].data as any;
-        await processChapterData(parsedData, "database");
+        await processChapterData(parsedData, "database", true); // true = merge mode
         return;
       }
 
@@ -605,9 +606,9 @@ const Chapters = () => {
     }
     const jsonData = await data.text();
     const parsedData = JSON.parse(jsonData);
-    await processChapterData(parsedData, "storage");
+    await processChapterData(parsedData, "storage", true); // true = merge mode
   };
-  const processChapterData = async (parsedData: any, source: string) => {
+  const processChapterData = async (parsedData: any, source: string, mergeMode: boolean = false) => {
     if (!parsedData) {
       toast({
         title: "Restore failed",
@@ -626,35 +627,71 @@ const Chapters = () => {
       return;
     }
 
-    // Clear existing chapters first
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    // Filter to keep only Korean chapters (chapters with Korean characters in title or from known Korean presets)
+    const koreanChapters = chaptersData.filter(chapter => {
+      const hasKoreanChars = /[\u3131-\uD79D]/.test(chapter.title);
+      return hasKoreanChars;
+    });
 
-    // Remove all existing chapter data
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('chapter_')) {
-        localStorage.removeItem(key);
-      }
-    }
+    if (mergeMode) {
+      // Merge mode: Keep existing chapters and add new ones
+      const existingChapters = chapters;
+      const existingIds = new Set(existingChapters.map(c => c.id));
+      
+      // Only add chapters that don't already exist
+      const newChapters = koreanChapters.filter(c => !existingIds.has(c.id));
+      const mergedChapters = [...existingChapters, ...newChapters];
+      
+      // Update localStorage with merged chapters
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mergedChapters));
+      
+      // Add individual chapter data for new chapters only
+      newChapters.forEach(chapter => {
+        const chapterId = chapter.id;
+        if (chapterId) {
+          const chapterKey = `chapter_${chapterId}`;
+          if (parsedData[chapterKey]) {
+            localStorage.setItem(chapterKey, parsedData[chapterKey]);
+          }
+        }
+      });
+      
+      setChapters(mergedChapters);
+      toast({
+        title: "Fetch successful",
+        description: `Added ${newChapters.length} new Korean chapters from Supabase ${source}. Your existing chapters were kept.`
+      });
+    } else {
+      // Replace mode: Clear and replace all chapters
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
 
-    // Set new chapters data
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(chaptersData));
-
-    // Restore individual chapter data
-    chaptersData.forEach(chapter => {
-      const chapterId = chapter.id;
-      if (chapterId) {
-        const chapterKey = `chapter_${chapterId}`;
-        if (parsedData[chapterKey]) {
-          localStorage.setItem(chapterKey, parsedData[chapterKey]);
+      // Remove all existing chapter data
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('chapter_')) {
+          localStorage.removeItem(key);
         }
       }
-    });
-    setChapters(chaptersData);
-    toast({
-      title: "Restore successful",
-      description: `Restored ${chaptersData.length} chapters from Supabase ${source}.`
-    });
+
+      // Set new chapters data
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(koreanChapters));
+
+      // Restore individual chapter data
+      koreanChapters.forEach(chapter => {
+        const chapterId = chapter.id;
+        if (chapterId) {
+          const chapterKey = `chapter_${chapterId}`;
+          if (parsedData[chapterKey]) {
+            localStorage.setItem(chapterKey, parsedData[chapterKey]);
+          }
+        }
+      });
+      setChapters(koreanChapters);
+      toast({
+        title: "Restore successful",
+        description: `Restored ${koreanChapters.length} Korean chapters from Supabase ${source}.`
+      });
+    }
   };
   const handleRestoreChapters = (data: Record<string, any>) => {
     try {
@@ -777,7 +814,7 @@ const Chapters = () => {
           <div className="flex gap-2">
             <ChapterBackupRestore onRestore={handleRestoreChapters} />
             
-            <Button variant="outline" onClick={handleRestoreFromSupabase} className="flex items-center gap-2 bg-green-400 hover:bg-green-300">
+            <Button variant="outline" onClick={() => setShowFetchWarning(true)} className="flex items-center gap-2 bg-green-400 hover:bg-green-300">
               <Download className="h-4 w-4" />
               Fetch Chapters
             </Button>
@@ -921,6 +958,30 @@ apple, a round fruit, The apple is red, Common fruit" value={manualImportText} o
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={handleImportWords}>Import Words</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Fetch Chapters Warning Dialog */}
+        <AlertDialog open={showFetchWarning} onOpenChange={setShowFetchWarning}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Fetch Chapters from Cloud</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will download Korean chapters from your cloud backup and add any new ones to your current chapters. 
+                Your existing chapters will NOT be deleted or replaced.
+                <br /><br />
+                Only chapters with Korean content will be fetched.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => {
+                setShowFetchWarning(false);
+                handleRestoreFromSupabase();
+              }}>
+                Fetch Chapters
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
