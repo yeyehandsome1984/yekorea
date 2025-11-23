@@ -73,8 +73,18 @@ const QuizMode = () => {
         try {
           const chapterData = JSON.parse(savedChapter);
           if (chapterData.words && chapterData.words.length > 0) {
-            const shuffledWords = [...chapterData.words].sort(() => 0.5 - Math.random()).slice(0, 10);
-            setWords(shuffledWords);
+            // Sort by unknown words first, then by priority
+            const sortedWords = [...chapterData.words]
+              .sort((a: any, b: any) => {
+                // First sort by known status (unknown first)
+                if (a.isKnown !== b.isKnown) {
+                  return a.isKnown ? 1 : -1;
+                }
+                // Then sort by priority (higher priority first)
+                return (b.priority || 3) - (a.priority || 3);
+              })
+              .slice(0, 10);
+            setWords(sortedWords);
           } else {
             toast({
               title: "No words found",

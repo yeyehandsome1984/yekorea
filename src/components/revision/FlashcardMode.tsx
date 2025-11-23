@@ -33,7 +33,13 @@ const FlashcardMode = ({ words, onComplete, onBack, onBookmark }: FlashcardModeP
   const { toast } = useToast();
 
   useEffect(() => {
-    const wordsToLearn = words.filter(word => !word.isKnown).sort(() => 0.5 - Math.random());
+    const wordsToLearn = words
+      .filter(word => !word.isKnown)
+      .sort((a, b) => {
+        // Sort by priority (higher priority first)
+        return ((b as any).priority || 3) - ((a as any).priority || 3);
+      })
+      .sort(() => 0.5 - Math.random());
     setActiveWords(wordsToLearn);
   }, [words]);
 

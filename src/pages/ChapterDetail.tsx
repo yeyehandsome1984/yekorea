@@ -689,6 +689,15 @@ const ChapterDetail = () => {
       return [...filtered].sort((a, b) => (b.priority || 3) - (a.priority || 3));
     } else if (sortBy === 'difficulty') {
       return [...filtered].sort((a, b) => (b.difficulty || 3) - (a.difficulty || 3));
+    } else if (sortBy === 'unfamiliar-first') {
+      return [...filtered].sort((a, b) => {
+        // First sort by known status (unknown first)
+        if (a.isKnown !== b.isKnown) {
+          return a.isKnown ? 1 : -1;
+        }
+        // Then sort by priority (higher priority first)
+        return (b.priority || 3) - (a.priority || 3);
+      });
     }
     
     return sortWordsAlphabetically(filtered);
@@ -806,6 +815,7 @@ const ChapterDetail = () => {
                       <SelectItem value="date-oldest">Oldest First</SelectItem>
                       <SelectItem value="priority">Priority</SelectItem>
                       <SelectItem value="difficulty">Difficulty</SelectItem>
+                      <SelectItem value="unfamiliar-first">Unfamiliar First</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1321,9 +1331,38 @@ const ChapterDetail = () => {
             })} placeholder="Enter example sentence" rows={2} />
               </div>
               
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Difficulty Level: {editingWord.difficulty || 3}/5</Label>
+                  <Slider 
+                    value={[editingWord.difficulty || 3]} 
+                    onValueChange={(value) => setEditingWord({ ...editingWord, difficulty: value[0] })}
+                    min={1}
+                    max={5}
+                    step={1}
+                    className="py-4"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Easy</span>
+                    <span>Hard</span>
+                  </div>
+                </div>
                 
-                
+                <div className="space-y-2">
+                  <Label>Priority: {editingWord.priority || 3}/5</Label>
+                  <Slider 
+                    value={[editingWord.priority || 3]} 
+                    onValueChange={(value) => setEditingWord({ ...editingWord, priority: value[0] })}
+                    min={1}
+                    max={5}
+                    step={1}
+                    className="py-4"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Low</span>
+                    <span>High</span>
+                  </div>
+                </div>
               </div>
             </div>}
           
