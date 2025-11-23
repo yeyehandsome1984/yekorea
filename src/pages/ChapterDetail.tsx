@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Play, Plus, Edit, Save, Trash2, FileSpreadsheet, Check, Search, FilterX, PlusCircle, ListPlus, Download, ChevronDown } from 'lucide-react';
+import { ArrowLeft, BookOpen, Play, Plus, Edit, Save, Trash2, FileSpreadsheet, Check, Search, FilterX, PlusCircle, ListPlus, Download, ChevronDown, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,6 +18,7 @@ import Navbar from '@/components/layout/Navbar';
 import ExcelImporter from '@/components/chapters/ExcelImporter';
 import FlashcardMode from '@/components/revision/FlashcardMode';
 import { generatePDF } from '@/utils/pdfGenerator';
+import { speakKorean } from '@/utils/textToSpeech';
 import * as XLSX from 'xlsx';
 interface Word {
   id: string;
@@ -885,6 +886,9 @@ const ChapterDetail = () => {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center space-x-1">
+                                <Button variant="ghost" size="sm" onClick={() => speakKorean(word.word)} className="h-8 w-8 p-0" title="Pronounce">
+                                  <Volume2 className="h-4 w-4" />
+                                </Button>
                                 <Button variant="ghost" size="sm" onClick={() => handleMarkAsKnown(word.id)} className="h-8 w-8 p-0" title="Mark as known">
                                   <Check className="h-4 w-4" />
                                 </Button>
@@ -935,6 +939,9 @@ const ChapterDetail = () => {
                             )}
                           </div>
                           <div className="flex flex-col space-y-1">
+                            <Button variant="ghost" size="sm" onClick={() => speakKorean(word.word)} className="h-8 w-8 p-0" title="Pronounce">
+                              <Volume2 className="h-4 w-4" />
+                            </Button>
                             <Button variant="ghost" size="sm" onClick={() => handleMarkAsKnown(word.id)} className="h-8 w-8 p-0" title="Mark as known">
                               <Check className="h-4 w-4" />
                             </Button>
@@ -995,6 +1002,9 @@ const ChapterDetail = () => {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center space-x-1">
+                                <Button variant="ghost" size="sm" onClick={() => speakKorean(word.word)} className="h-8 w-8 p-0" title="Pronounce">
+                                  <Volume2 className="h-4 w-4" />
+                                </Button>
                                 <Button variant="ghost" size="sm" onClick={() => handleMarkAsKnown(word.id)} className="h-8 w-8 p-0 text-green-500" title="Mark as unknown">
                                   <Check className="h-4 w-4" />
                                 </Button>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, ArrowRight, Bookmark, Check, X, Pause, Play, Menu, Star, AlertTriangle, Clock, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bookmark, Check, X, Pause, Play, Menu, Star, AlertTriangle, Clock, ChevronUp, ChevronDown, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
 import QuestionGrid from './QuestionGrid';
+import { speakKorean } from '@/utils/textToSpeech';
 
 interface QuizWord {
   id: string;
@@ -434,8 +435,11 @@ const QuizMode = ({
           }}>
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className={`text-lg leading-relaxed font-bold ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+                  <div className={`text-lg leading-relaxed font-bold flex items-center gap-2 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
                     <span className="font-bold">{currentIndex + 1}.</span> What is the definition of "<span className="font-bold">{currentWord.word}</span>"?
+                    <Button variant="ghost" size="sm" onClick={() => speakKorean(currentWord.word)} className="h-8 w-8 p-0" title="Pronounce">
+                      <Volume2 className="h-5 w-5" />
+                    </Button>
                   </div>
                 </div>
               </div>
