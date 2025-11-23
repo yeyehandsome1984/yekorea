@@ -1,19 +1,20 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Book, BookMarked, Calendar, LineChart, Play, Sparkles, Save, ArchiveRestore, Settings, Download, Upload, Languages, GraduationCap } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import FeatureCard from '@/components/home/FeatureCard';
 import Navbar from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
+import LocalStorageMigration from '@/components/migration/LocalStorageMigration';
 
 // Define the URL for the spelling app
 const SPELLING_APP_URL = "https://sscspell.lovable.app/";
 const Index = () => {
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showMigrationDialog, setShowMigrationDialog] = useState(false);
 
   // Preload the spelling application immediately
   useEffect(() => {
@@ -305,7 +306,21 @@ const Index = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="mb-10">
           <div className="flex justify-between items-center">
-            <div></div>
+            <Dialog open={showMigrationDialog} onOpenChange={setShowMigrationDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Upload className="h-4 w-4" />
+                  Migrate Local Data
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Data Migration</DialogTitle>
+                </DialogHeader>
+                <LocalStorageMigration />
+              </DialogContent>
+            </Dialog>
+            
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="flex items-center gap-2">
