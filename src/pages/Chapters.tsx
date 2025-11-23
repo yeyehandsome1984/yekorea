@@ -685,38 +685,11 @@ const Chapters = () => {
     }
   };
   const handleRestoreFromSupabase = async () => {
-    try {
-      toast({
-        title: "Fetching chapters",
-        description: "Downloading chapter data from Supabase database..."
-      });
-
-      // First try to fetch from the database table
-      const {
-        data: dbData,
-        error: dbError
-      } = await supabase.from('chapter_vocabulary').select('data').limit(1);
-      if (dbError) {
-        console.error('Database error:', dbError);
-        // Fallback to storage if database fails
-        return await handleRestoreFromStorage();
-      }
-      if (dbData && dbData.length > 0 && dbData[0].data) {
-        const parsedData = dbData[0].data as any;
-        await processChapterData(parsedData, "database", true); // true = merge mode
-        return;
-      }
-
-      // If no data in database, try storage as fallback
-      await handleRestoreFromStorage();
-    } catch (error) {
-      console.error('Error restoring chapters:', error);
-      toast({
-        title: "Restore failed",
-        description: "There was an error restoring the chapters. Check console for details.",
-        variant: "destructive"
-      });
-    }
+    toast({
+      title: "Cloud Restore Not Available",
+      description: "Chapters are now stored in a shared global database. No manual restore needed.",
+      variant: "default"
+    });
   };
   const handleRestoreFromStorage = async () => {
     const {

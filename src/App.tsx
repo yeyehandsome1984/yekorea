@@ -26,7 +26,7 @@ const App = () => {
   useEffect(() => {
     const keepDatabaseActive = async () => {
       try {
-        await supabase.from('chapter_vocabulary').select('count', { count: 'exact', head: true });
+        await supabase.from('chapters').select('count', { count: 'exact', head: true });
       } catch (error) {
         // Silently handle error - this is just to keep DB active
         console.log('Database keep-alive ping');

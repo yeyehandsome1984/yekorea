@@ -7,89 +7,20 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
-      chapter_vocabulary: {
-        Row: {
-          created_at: string | null
-          data: Json
-          id: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          data: Json
-          id?: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          data?: Json
-          id?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      learning_plan_sets: {
-        Row: {
-          attempts: number
-          best_score: number
-          created_at: string
-          id: string
-          last_attempted_at: string | null
-          plan_id: string
-          questions: Json
-          title: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          attempts?: number
-          best_score?: number
-          created_at?: string
-          id?: string
-          last_attempted_at?: string | null
-          plan_id: string
-          questions?: Json
-          title: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          attempts?: number
-          best_score?: number
-          created_at?: string
-          id?: string
-          last_attempted_at?: string | null
-          plan_id?: string
-          questions?: Json
-          title?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "learning_plan_sets_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "learning_plans"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      learning_plans: {
+      chapters: {
         Row: {
           created_at: string
           description: string | null
           id: string
           title: string
           updated_at: string
-          user_id: string
         }
         Insert: {
           created_at?: string
@@ -97,7 +28,6 @@ export type Database = {
           id?: string
           title: string
           updated_at?: string
-          user_id: string
         }
         Update: {
           created_at?: string
@@ -105,85 +35,77 @@ export type Database = {
           id?: string
           title?: string
           updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }
-      practice_results: {
+      words: {
         Row: {
-          answers: Json
-          completed_at: string
+          chapter_id: string
+          created_at: string
+          definition: string
+          difficulty: number | null
+          example: string | null
           id: string
-          score: number
-          set_id: string
-          time_taken: number | null
-          total_questions: number
-          user_id: string
+          is_bookmarked: boolean | null
+          is_known: boolean | null
+          notes: string | null
+          phonetic: string | null
+          priority: number | null
+          tags: Json | null
+          topik_level: string | null
+          updated_at: string
+          word: string
         }
         Insert: {
-          answers?: Json
-          completed_at?: string
+          chapter_id: string
+          created_at?: string
+          definition: string
+          difficulty?: number | null
+          example?: string | null
           id?: string
-          score: number
-          set_id: string
-          time_taken?: number | null
-          total_questions: number
-          user_id: string
+          is_bookmarked?: boolean | null
+          is_known?: boolean | null
+          notes?: string | null
+          phonetic?: string | null
+          priority?: number | null
+          tags?: Json | null
+          topik_level?: string | null
+          updated_at?: string
+          word: string
         }
         Update: {
-          answers?: Json
-          completed_at?: string
+          chapter_id?: string
+          created_at?: string
+          definition?: string
+          difficulty?: number | null
+          example?: string | null
           id?: string
-          score?: number
-          set_id?: string
-          time_taken?: number | null
-          total_questions?: number
-          user_id?: string
+          is_bookmarked?: boolean | null
+          is_known?: boolean | null
+          notes?: string | null
+          phonetic?: string | null
+          priority?: number | null
+          tags?: Json | null
+          topik_level?: string | null
+          updated_at?: string
+          word?: string
         }
         Relationships: [
           {
-            foreignKeyName: "practice_results_set_id_fkey"
-            columns: ["set_id"]
+            foreignKeyName: "words_chapter_id_fkey"
+            columns: ["chapter_id"]
             isOneToOne: false
-            referencedRelation: "learning_plan_sets"
+            referencedRelation: "chapters"
             referencedColumns: ["id"]
           },
         ]
-      }
-      user_backups: {
-        Row: {
-          backup_data: Json
-          created_at: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          backup_data: Json
-          created_at?: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          backup_data?: Json
-          created_at?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      get_user_learning_plan_backup: {
-        Args: { user_id_param: string }
-        Returns: Json
-      }
-      upsert_learning_plan_backup: {
-        Args: { user_id_param: string; data_param: Json }
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
