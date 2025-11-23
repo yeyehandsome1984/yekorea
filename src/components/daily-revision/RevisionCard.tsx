@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Check, X, Star, StarOff, Search } from 'lucide-react';
+import { ArrowLeft, Check, X, Star, StarOff, Search, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import WordMeaningDialog from './WordMeaningDialog';
+import { speakKorean } from '@/utils/textToSpeech';
 interface RevisionCardProps {
   word: string;
   translation: string;
@@ -53,10 +54,7 @@ const RevisionCard = ({
   } | null>(null);
   const handlePlayAudio = (e: React.MouseEvent) => {
     e.stopPropagation();
-    toast({
-      title: "Audio playback",
-      description: `Playing audio for: ${word}`
-    });
+    speakKorean(word);
   };
   const handleBookmarkToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -145,7 +143,12 @@ const RevisionCard = ({
           </div>
           
           <div className="flex flex-col items-center justify-center p-4 text-center">
-            {!isFlipped ? <h2 className="text-4xl font-bold text-gray-900">{word}</h2> : <div className="space-y-4 text-center">
+            {!isFlipped ? <div className="flex items-center gap-3">
+                <h2 className="text-4xl font-bold text-gray-900">{word}</h2>
+                <Button variant="ghost" size="sm" onClick={handlePlayAudio} className="h-10 w-10 p-0">
+                  <Volume2 className="h-6 w-6" />
+                </Button>
+              </div> : <div className="space-y-4 text-center">
                 <h3 className="font-bold text-red-600 text-2xl">{word}</h3>
                 <div className="space-y-2">
                   {phonetic && <p className="text-gray-600 font-medium">Meaning: {phonetic}</p>}

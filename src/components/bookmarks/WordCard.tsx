@@ -1,8 +1,9 @@
 import React from 'react';
-import { BookmarkMinus, Volume, BookmarkCheck } from 'lucide-react';
+import { BookmarkMinus, Volume2, BookmarkCheck } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { speakKorean } from '@/utils/textToSpeech';
 interface WordCardProps {
   id: string;
   word: string;
@@ -23,12 +24,7 @@ const WordCard = ({
     toast
   } = useToast();
   const handlePlayAudio = () => {
-    // In a real app, this would play audio for the word
-    console.log('Playing audio for:', word);
-    toast({
-      title: "Audio playback",
-      description: `Playing audio for: ${word}`
-    });
+    speakKorean(word);
   };
   const handleRemoveBookmark = () => {
     onRemoveBookmark(id);
@@ -45,7 +41,9 @@ const WordCard = ({
             {phonetic && <p className="text-sm text-gray-500 italic">{phonetic}</p>}
           </div>
           <div className="flex space-x-1">
-            
+            <Button variant="ghost" size="sm" onClick={handlePlayAudio} className="h-8 w-8 p-0">
+              <Volume2 className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="sm" onClick={handleRemoveBookmark} className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50">
               <BookmarkMinus className="h-4 w-4" />
             </Button>
