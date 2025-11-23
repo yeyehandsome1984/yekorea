@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import ChapterBackupRestore from '@/components/chapters/ChapterBackupRestore';
+
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect as useAuthEffect, useState as useAuthState } from 'react';
 import { fetchAllChapters, fetchWordsByChapter, createChapter, updateChapter, deleteChapter, createWords } from '@/lib/database';
@@ -877,7 +877,7 @@ const Chapters = () => {
             <h1 className="text-3xl font-bold text-gray-900">My Chapters</h1>
           </div>
           <div className="flex gap-2">
-            <ChapterBackupRestore onRestore={handleRestoreChapters} />
+            
             
             <Button variant="outline" onClick={() => setShowFetchWarning(true)} className="flex items-center gap-2 bg-green-400 hover:bg-green-300">
               <Download className="h-4 w-4" />
