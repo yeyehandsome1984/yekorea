@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import { createWords, fetchWordsByChapter } from '@/lib/database';
 import * as XLSX from 'xlsx';
 interface ExcelImporterProps {
   chapterId: string;
@@ -105,24 +106,12 @@ const ExcelImporter = ({
 
       // Check existing words in chapter for potential duplicates in preview
       try {
-        const chapterKey = `chapter_${chapterId}`;
-        const existingDataStr = localStorage.getItem(chapterKey);
-        if (existingDataStr) {
-          const chapterData = JSON.parse(existingDataStr);
-          const existingWords = chapterData.words || [];
-
-          // Mark duplicate words in preview data
-          const previewWords = words.slice(0, 5).map(word => {
-            const isDuplicate = existingWords.some(existingWord => existingWord.word.toLowerCase() === word.word.toLowerCase());
-            return {
-              ...word,
-              duplicate: isDuplicate
-            };
-          });
-          setPreviewData(previewWords);
-        } else {
-          setPreviewData(words.slice(0, 5));
-        }
+        const existingWords = await fetchWordsByChapter(chapterId);
+        const previewWords = words.slice(0, 5).map(word => {
+          const isDuplicate = existingWords.some(existingWord => existingWord.word.toLowerCase() === word.word.toLowerCase());
+          return { ...word, duplicate: isDuplicate };
+        });
+        setPreviewData(previewWords);
       } catch (err) {
         console.error('Error checking for duplicates:', err);
         setPreviewData(words.slice(0, 5));
@@ -135,19 +124,17 @@ const ExcelImporter = ({
       setIsUploading(false);
     }
   };
-  const handleImport = () => {
+  const handleImport = async () => {
     if (!file || !chapterId) return;
     try {
-      // Parse the file again to get all data
       const reader = new FileReader();
-      reader.onload = e => {
+      reader.onload = async (e) => {
         try {
           const data = e.target?.result;
           const workbook = XLSX.read(data);
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
 
-          // Map data to word format
           const words = jsonData.map((row, index) => ({
             id: `imported_${Date.now()}_${index}`,
             word: row.word?.toString() || '',
@@ -158,20 +145,7 @@ const ExcelImporter = ({
             isBookmarked: false
           })).filter(word => word.word && word.definition);
 
-          // Get existing chapter data
-          const chapterKey = `chapter_${chapterId}`;
-          let chapterData: ChapterData = {};
-          try {
-            const existingData = localStorage.getItem(chapterKey);
-            if (existingData) {
-              chapterData = JSON.parse(existingData);
-            }
-          } catch (err) {
-            console.error('Error loading existing chapter data:', err);
-          }
-
-          // Check for duplicate words
-          const existingWords = chapterData.words || [];
+          const existingWords = await fetchWordsByChapter(chapterId);
           const duplicates: string[] = [];
           const uniqueWords = words.filter(newWord => {
             const isDuplicate = existingWords.some(existingWord => existingWord.word.toLowerCase() === newWord.word.toLowerCase());
@@ -182,15 +156,22 @@ const ExcelImporter = ({
             return true;
           });
 
-          // Update chapter with new unique words
-          const updatedChapter = {
-            ...chapterData,
-            title: chapterTitle,
-            words: [...existingWords, ...uniqueWords]
-          };
+          const wordsToInsert = uniqueWords.map(w => ({
+            chapter_id: chapterId,
+            word: w.word,
+            definition: w.definition,
+            phonetic: w.phonetic,
+            example: w.example,
+            notes: w.notes,
+            is_bookmarked: false,
+            is_known: false,
+            difficulty: 3,
+            tags: [],
+            priority: 3
+          }));
 
-          // Save back to localStorage
-          localStorage.setItem(chapterKey, JSON.stringify(updatedChapter));
+          await createWords(wordsToInsert);
+
           if (duplicates.length > 0) {
             toast({
               title: 'Import Completed with Warnings',
@@ -203,7 +184,6 @@ const ExcelImporter = ({
             });
           }
 
-          // Reset state
           setFile(null);
           setPreviewData([]);
           onImportComplete(uniqueWords.length);
