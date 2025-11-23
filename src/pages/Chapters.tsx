@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import ChapterBackupRestore from '@/components/chapters/ChapterBackupRestore';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect as useAuthEffect, useState as useAuthState } from 'react';
+import { fetchAllChapters, fetchWordsByChapter, createChapter, updateChapter, deleteChapter, createWords } from '@/lib/database';
 interface Chapter {
   id: string;
   title: string;
@@ -242,95 +243,52 @@ const Chapters = () => {
   const [manualImportText, setManualImportText] = useState("");
   const [user, setUser] = useAuthState<any>(null);
   const [showFetchWarning, setShowFetchWarning] = useState(false);
-  const [chapters, setChapters] = useState<Chapter[]>(() => {
-    const savedChapters = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (savedChapters) {
-      try {
-        return JSON.parse(savedChapters);
-      } catch (e) {
-        console.error("Error parsing chapters from localStorage:", e);
-      }
-    }
-    // Create default Korean chapters with preset vocabulary
-    const defaultChapters = [{
-      id: '1',
-      title: '기본 인사말 (Basic Greetings)',
-      wordCount: 15,
-      progress: 0,
-      isBookmarked: true
-    }, {
-      id: '2',
-      title: '일상 대화 (Daily Conversation)',
-      wordCount: 20,
-      progress: 0,
-      isBookmarked: false
-    }, {
-      id: '3',
-      title: '자주 쓰는 문장 (Common Sentences)',
-      wordCount: 18,
-      progress: 0,
-      isBookmarked: true
-    }, {
-      id: '4',
-      title: 'Korean Idiom (한국 관용어)',
-      wordCount: 20,
-      progress: 0,
-      isBookmarked: false
-    }, {
-      id: '5',
-      title: 'Korean Verb (한국어 동사)',
-      wordCount: 15,
-      progress: 0,
-      isBookmarked: false
-    }, {
-      id: '6',
-      title: 'Key Korean Adverb (주요 한국어 부사)',
-      wordCount: 20,
-      progress: 0,
-      isBookmarked: false
-    }, {
-      id: '7',
-      title: 'Korean TOPIK-2 Word (토픽2 어휘)',
-      wordCount: 20,
-      progress: 0,
-      isBookmarked: false
-    }];
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-    // Initialize with preset Korean vocabulary
-    initializeKoreanVocabulary(defaultChapters);
-    
-    return defaultChapters;
-  });
+  const loadChapters = async () => {
+    try {
+      setIsLoading(true);
+      const dbChapters = await fetchAllChapters();
+
+      const chaptersWithStats: Chapter[] = [];
+      for (const ch of dbChapters) {
+        const words = await fetchWordsByChapter(ch.id);
+        const wordCount = words.length;
+        const knownWords = words.filter(w => w.is_bookmarked).length;
+        const progress = wordCount === 0 ? 0 : Math.round((knownWords / wordCount) * 100);
+
+        chaptersWithStats.push({
+          id: ch.id,
+          title: ch.title,
+          wordCount,
+          progress,
+          isBookmarked: false,
+        });
+      }
+
+      setChapters(chaptersWithStats);
+    } catch (error) {
+      console.error("Error loading chapters from database:", error);
+      toast({
+        title: "Error loading chapters",
+        description: "There was an error loading chapters from the shared database.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(chapters));
-  }, [chapters]);
+    loadChapters();
+  }, []);
 
   useAuthEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       console.log('Current user:', user?.email);
       setUser(user);
     });
-  }, []);
-  useEffect(() => {
-    const updatedChapters = chapters.map(chapter => {
-      const chapterDataKey = `chapter_${chapter.id}`;
-      const savedChapter = localStorage.getItem(chapterDataKey);
-      if (savedChapter) {
-        try {
-          const chapterData = JSON.parse(savedChapter);
-          const progress = calculateChapterProgress(chapterData.words || []);
-          return {
-            ...chapter,
-            wordCount: chapterData.words ? chapterData.words.length : chapter.wordCount,
-            progress: progress
-          };
-        } catch (e) {
-          console.error(`Error parsing chapter data for ${chapter.id}:`, e);
-        }
-      }
-      return chapter;
-    });
-    setChapters(updatedChapters);
   }, []);
   const calculateChapterProgress = (words: Word[]): number => {
     if (!words || words.length === 0) return 0;
@@ -348,7 +306,7 @@ const Chapters = () => {
       description: `${chapter?.title} has been ${chapter?.isBookmarked ? "removed from" : "added to"} your bookmarks.`
     });
   };
-  const handleCreateChapter = () => {
+  const handleCreateChapter = async () => {
     if (!newChapterTitle.trim()) {
       toast({
         title: "Error",
@@ -358,7 +316,6 @@ const Chapters = () => {
       return;
     }
 
-    // Check for duplicate names
     const duplicateExists = chapters.some(c => c.title.toLowerCase() === newChapterTitle.trim().toLowerCase());
     if (duplicateExists) {
       toast({
@@ -369,30 +326,32 @@ const Chapters = () => {
       return;
     }
 
-    const newId = (Math.max(0, ...chapters.map(c => parseInt(c.id))) + 1).toString();
-    const newChapter = {
-      id: newId,
-      title: newChapterTitle.trim(),
-      wordCount: 0,
-      progress: 0,
-      isBookmarked: false
-    };
-    const updatedChapters = [...chapters, newChapter];
-    setChapters(updatedChapters);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedChapters));
-    setNewChapterTitle('');
-    setShowCreateDialog(false);
-    toast({
-      title: "Chapter created",
-      description: `"${newChapter.title}" has been created.`
-    });
-    const chapterData = {
-      id: newId,
-      title: newChapter.title,
-      words: []
-    };
-    localStorage.setItem(`chapter_${newId}`, JSON.stringify(chapterData));
-    navigate(`/chapters/${newId}`);
+    try {
+      const newChapter = await createChapter(newChapterTitle.trim());
+      
+      setChapters([...chapters, {
+        id: newChapter.id,
+        title: newChapter.title,
+        wordCount: 0,
+        progress: 0,
+        isBookmarked: false
+      }]);
+      
+      setNewChapterTitle('');
+      setShowCreateDialog(false);
+      toast({
+        title: "Chapter created",
+        description: `"${newChapter.title}" has been created.`
+      });
+      navigate(`/chapters/${newChapter.id}`);
+    } catch (error) {
+      console.error("Error creating chapter:", error);
+      toast({
+        title: "Error creating chapter",
+        description: "There was an error creating the chapter.",
+        variant: "destructive"
+      });
+    }
   };
 
   const openRenameDialog = (id: string) => {
@@ -404,7 +363,7 @@ const Chapters = () => {
     }
   };
 
-  const handleRenameChapter = () => {
+  const handleRenameChapter = async () => {
     if (!chapterToRename || !renameChapterTitle.trim()) {
       toast({
         title: "Error",
@@ -414,7 +373,6 @@ const Chapters = () => {
       return;
     }
 
-    // Check for duplicate names (excluding the current chapter)
     const duplicateExists = chapters.some(c => 
       c.id !== chapterToRename && c.title.toLowerCase() === renameChapterTitle.trim().toLowerCase()
     );
@@ -427,55 +385,64 @@ const Chapters = () => {
       return;
     }
 
-    const updatedChapters = chapters.map(chapter =>
-      chapter.id === chapterToRename
-        ? { ...chapter, title: renameChapterTitle.trim() }
-        : chapter
-    );
+    try {
+      await updateChapter(chapterToRename, { title: renameChapterTitle.trim() });
+      
+      const updatedChapters = chapters.map(chapter =>
+        chapter.id === chapterToRename
+          ? { ...chapter, title: renameChapterTitle.trim() }
+          : chapter
+      );
+      setChapters(updatedChapters);
 
-    setChapters(updatedChapters);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedChapters));
+      setShowRenameDialog(false);
+      setChapterToRename(null);
+      setRenameChapterTitle('');
 
-    // Also update the chapter data
-    const chapterDataKey = `chapter_${chapterToRename}`;
-    const chapterDataStr = localStorage.getItem(chapterDataKey);
-    if (chapterDataStr) {
-      try {
-        const chapterData = JSON.parse(chapterDataStr);
-        chapterData.title = renameChapterTitle.trim();
-        localStorage.setItem(chapterDataKey, JSON.stringify(chapterData));
-      } catch (e) {
-        console.error("Error updating chapter data:", e);
-      }
+      toast({
+        title: "Chapter renamed",
+        description: `Chapter has been renamed to "${renameChapterTitle.trim()}".`
+      });
+    } catch (error) {
+      console.error("Error renaming chapter:", error);
+      toast({
+        title: "Error renaming chapter",
+        description: "There was an error renaming the chapter.",
+        variant: "destructive"
+      });
     }
-
-    setShowRenameDialog(false);
-    setChapterToRename(null);
-    setRenameChapterTitle('');
-
-    toast({
-      title: "Chapter renamed",
-      description: `Chapter has been renamed to "${renameChapterTitle.trim()}".`
-    });
   };
   const openDeleteDialog = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setChapterToDelete(id);
     setShowDeleteDialog(true);
   };
-  const handleDeleteChapter = () => {
+  const handleDeleteChapter = async () => {
     if (!chapterToDelete) return;
+    
     const chapterToRemove = chapters.find(c => c.id === chapterToDelete);
-    const updatedChapters = chapters.filter(chapter => chapter.id !== chapterToDelete);
-    setChapters(updatedChapters);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedChapters));
-    localStorage.removeItem(`chapter_${chapterToDelete}`);
-    setShowDeleteDialog(false);
-    setChapterToDelete(null);
-    toast({
-      title: "Chapter deleted",
-      description: `"${chapterToRemove?.title}" has been deleted.`
-    });
+    
+    try {
+      await deleteChapter(chapterToDelete);
+      
+      const updatedChapters = chapters.filter(chapter => chapter.id !== chapterToDelete);
+      setChapters(updatedChapters);
+      
+      setShowDeleteDialog(false);
+      setChapterToDelete(null);
+      
+      toast({
+        title: "Chapter deleted",
+        description: `"${chapterToRemove?.title}" has been deleted.`
+      });
+    } catch (error) {
+      console.error("Error deleting chapter:", error);
+      toast({
+        title: "Error deleting chapter",
+        description: "There was an error deleting the chapter.",
+        variant: "destructive"
+      });
+    }
   };
   const openImportDialog = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -555,24 +522,12 @@ const Chapters = () => {
       return;
     }
   };
-  const completeImport = (rows: string[][]) => {
+  const completeImport = async (rows: string[][]) => {
     if (!importChapterId || rows.length === 0) return;
-    const chapterDataKey = `chapter_${importChapterId}`;
-    const savedChapterJson = localStorage.getItem(chapterDataKey);
-    let chapterData = {
-      id: importChapterId,
-      title: chapters.find(c => c.id === importChapterId)?.title || "Chapter",
-      words: [] as Word[]
-    };
-    if (savedChapterJson) {
-      try {
-        chapterData = JSON.parse(savedChapterJson);
-      } catch (e) {
-        console.error("Error parsing chapter data:", e);
-      }
-    }
-    const newWords: Word[] = [];
+    
+    const newWords: any[] = [];
     let skippedCount = 0;
+    
     rows.forEach((row, index) => {
       if (index === 0 && (row[0].toLowerCase() === "word" || row[0].toLowerCase() === "vocabulary" || row[0].toLowerCase() === "term")) {
         return;
@@ -582,15 +537,20 @@ const Chapters = () => {
         return;
       }
       newWords.push({
-        id: crypto.randomUUID(),
+        chapter_id: importChapterId,
         word: row[0].trim(),
         definition: row[1].trim(),
-        example: row.length > 2 ? row[2].trim() : undefined,
-        notes: row.length > 3 ? row[3].trim() : undefined,
-        phonetic: row.length > 4 ? row[4].trim() : undefined,
-        isBookmarked: false
+        example: row.length > 2 ? row[2].trim() : '',
+        notes: row.length > 3 ? row[3].trim() : '',
+        phonetic: row.length > 4 ? row[4].trim() : '',
+        is_bookmarked: false,
+        is_known: false,
+        difficulty: 3,
+        tags: [],
+        priority: 3
       });
     });
+    
     if (newWords.length === 0) {
       toast({
         title: "Import Failed",
@@ -599,20 +559,24 @@ const Chapters = () => {
       });
       return;
     }
-    const updatedWords = [...chapterData.words, ...newWords];
-    chapterData.words = updatedWords;
-    localStorage.setItem(chapterDataKey, JSON.stringify(chapterData));
-    const updatedChapters = chapters.map(chapter => chapter.id === importChapterId ? {
-      ...chapter,
-      wordCount: updatedWords.length
-    } : chapter);
-    setChapters(updatedChapters);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedChapters));
-    setShowImportDialog(false);
-    toast({
-      title: "Import Successful",
-      description: `Added ${newWords.length} new vocabulary words${skippedCount > 0 ? ` (${skippedCount} entries skipped)` : ''}.`
-    });
+    
+    try {
+      await createWords(newWords);
+      await loadChapters(); // Reload to update counts
+      
+      setShowImportDialog(false);
+      toast({
+        title: "Import Successful",
+        description: `Added ${newWords.length} new vocabulary words${skippedCount > 0 ? ` (${skippedCount} entries skipped)` : ''}.`
+      });
+    } catch (error) {
+      console.error("Error importing words:", error);
+      toast({
+        title: "Import Failed",
+        description: "There was an error importing the words.",
+        variant: "destructive"
+      });
+    }
   };
   const handleFetchFromGoogleDrive = async () => {
     try {

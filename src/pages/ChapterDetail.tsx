@@ -21,6 +21,7 @@ import FlashcardMode from '@/components/revision/FlashcardMode';
 import { generatePDF } from '@/utils/pdfGenerator';
 import { speakKorean } from '@/utils/textToSpeech';
 import { getAllDuplicatesInChapter } from '@/utils/duplicateWordDetector';
+import { fetchChapter, fetchWordsByChapter, createWord, updateWord, deleteWord, createWords } from '@/lib/database';
 import * as XLSX from 'xlsx';
 interface Word {
   id: string;
@@ -31,17 +32,19 @@ interface Word {
   notes?: string;
   isBookmarked: boolean;
   isKnown?: boolean;
-  difficulty?: number; // 1-5 scale
-  topikLevel?: string; // TOPIK-1, TOPIK-2, or none
+  difficulty?: number;
+  topikLevel?: string;
   tags?: string[];
   createdAt?: string;
-  priority?: number; // 1-5, higher is more important
+  priority?: number;
 }
+
 interface Chapter {
+  id: string;
   title: string;
-  description: string;
-  words: Word[];
+  description?: string;
 }
+
 const ChapterDetail = () => {
   const {
     chapterId
@@ -49,10 +52,10 @@ const ChapterDetail = () => {
     chapterId: string;
   }>();
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
+  
   const [chapter, setChapter] = useState<Chapter | null>(null);
+  const [words, setWords] = useState<Word[]>([]);
   const [isEditingWord, setIsEditingWord] = useState<boolean>(false);
   const [editingWord, setEditingWord] = useState<Word | null>(null);
   const [isAddingWord, setIsAddingWord] = useState<boolean>(false);
@@ -105,9 +108,9 @@ const ChapterDetail = () => {
       word: cleanWord(word.word)
     }));
   };
-  const handleRemoveDuplicates = () => {
+  const handleRemoveDuplicates = async () => {
     if (!chapter) return;
-    const uniqueWords = chapter.words.reduce((acc: Word[], current) => {
+    const uniqueWords = words.reduce((acc: Word[], current) => {
       const normalizedCurrent = normalizeForComparison(current.word);
       const exists = acc.find(word => normalizeForComparison(word.word) === normalizedCurrent);
       if (!exists) {
@@ -115,21 +118,24 @@ const ChapterDetail = () => {
       }
       return acc;
     }, []);
-    if (uniqueWords.length === chapter.words.length) {
+    if (uniqueWords.length === words.length) {
       toast({
         title: "No duplicates found",
         description: "There are no duplicate words in this chapter."
       });
       return;
     }
-    const removedCount = chapter.words.length - uniqueWords.length;
-    const updatedChapter = {
-      ...chapter,
-      words: uniqueWords
-    };
+    const removedCount = words.length - uniqueWords.length;
+    
     try {
-      localStorage.setItem(`chapter_${chapterId}`, JSON.stringify(updatedChapter));
-      setChapter(updatedChapter);
+      // Delete words that are duplicates
+      const duplicateIds = words.filter(w => !uniqueWords.find(uw => uw.id === w.id)).map(w => w.id);
+      for (const id of duplicateIds) {
+        await deleteWord(id);
+      }
+      
+      await loadChapter(); // Reload to get fresh data
+      
       toast({
         title: "Duplicates removed",
         description: `${removedCount} duplicate word(s) have been removed.`
@@ -150,35 +156,46 @@ const ChapterDetail = () => {
   }, [chapterId]);
 
   useEffect(() => {
-    if (chapterId && chapter) {
+    if (chapterId && words.length > 0) {
       const duplicates = getAllDuplicatesInChapter(chapterId);
       setDuplicatesMap(duplicates);
     }
-  }, [chapterId, chapter]);
-  const loadChapter = () => {
+  }, [chapterId, words]);
+
+  const loadChapter = async () => {
+    if (!chapterId) return;
+    
     try {
-      const chapterStr = localStorage.getItem(`chapter_${chapterId}`);
-      if (chapterStr) {
-        const chapterData = JSON.parse(chapterStr);
-        setChapter(chapterData);
-      } else {
-        toast({
-          title: "Chapter not found",
-          description: "The chapter you're looking for doesn't exist.",
-          variant: "destructive"
-        });
-        navigate('/chapters');
-      }
-    } catch (e) {
-      console.error("Error loading chapter:", e);
+      const chapterData = await fetchChapter(chapterId);
+      const wordsData = await fetchWordsByChapter(chapterId);
+      
+      setChapter(chapterData);
+      setWords(wordsData.map(w => ({
+        id: w.id,
+        word: w.word,
+        definition: w.definition,
+        phonetic: w.phonetic || '',
+        example: w.example || '',
+        notes: w.notes || '',
+        isBookmarked: w.is_bookmarked || false,
+        isKnown: w.is_known || false,
+        difficulty: w.difficulty || 3,
+        topikLevel: w.topik_level || '',
+        tags: (w.tags as string[]) || [],
+        createdAt: w.created_at,
+        priority: w.priority || 3
+      })));
+    } catch (error) {
+      console.error("Error loading chapter:", error);
       toast({
-        title: "Error loading chapter",
-        description: "There was an error loading this chapter.",
+        title: "Chapter not found",
+        description: "The chapter you're looking for doesn't exist.",
         variant: "destructive"
       });
+      navigate('/chapters');
     }
   };
-  const handleBulkAddWords = () => {
+  const handleBulkAddWords = async () => {
     if (!bulkWordsText.trim()) {
       toast({
         title: "No words to add",
@@ -189,11 +206,11 @@ const ChapterDetail = () => {
     }
     if (!chapter) return;
 
-    // Parse the bulk text
     const lines = bulkWordsText.trim().split('\n').filter(line => line.trim());
-    const wordsToAdd: Word[] = [];
+    const wordsToAdd: any[] = [];
     const duplicates: string[] = [];
     const invalidEntries: string[] = [];
+    
     for (let i = 0; i < lines.length; i += 2) {
       const wordLine = lines[i]?.trim();
       const definitionLine = lines[i + 1]?.trim();
@@ -204,31 +221,30 @@ const ChapterDetail = () => {
       const cleanedWord = cleanWord(wordLine);
       const normalizedNewWord = normalizeForComparison(cleanedWord);
 
-      // Check for duplicates in existing words
-      const existsInChapter = chapter.words.some(existingWord => normalizeForComparison(existingWord.word) === normalizedNewWord);
-
-      // Check for duplicates in current batch
+      const existsInChapter = words.some(existingWord => normalizeForComparison(existingWord.word) === normalizedNewWord);
       const existsInBatch = wordsToAdd.some(batchWord => normalizeForComparison(batchWord.word) === normalizedNewWord);
+      
       if (existsInChapter || existsInBatch) {
         duplicates.push(cleanedWord);
         continue;
       }
+      
       wordsToAdd.push({
-        id: `word_${Date.now()}_${i}`,
+        chapter_id: chapterId,
         word: cleanedWord,
         definition: definitionLine,
         phonetic: '',
         example: '',
         notes: '',
-        isBookmarked: false,
-        isKnown: false,
+        is_bookmarked: false,
+        is_known: false,
         difficulty: 3,
-        topikLevel: '',
+        topik_level: '',
         tags: [],
-        createdAt: new Date().toISOString(),
         priority: 3
       });
     }
+    
     if (wordsToAdd.length === 0) {
       toast({
         title: "No valid words to add",
@@ -238,17 +254,13 @@ const ChapterDetail = () => {
       return;
     }
 
-    // Add words to chapter
-    const updatedWords = [...(chapter.words || []), ...wordsToAdd];
-    const updatedChapter = {
-      ...chapter,
-      words: updatedWords
-    };
     try {
-      localStorage.setItem(`chapter_${chapterId}`, JSON.stringify(updatedChapter));
-      setChapter(updatedChapter);
+      await createWords(wordsToAdd);
+      await loadChapter(); // Reload to get fresh data
+      
       setBulkWordsText('');
       setIsBulkAddingWords(false);
+      
       let message = `${wordsToAdd.length} words have been added successfully.`;
       if (duplicates.length > 0) {
         message += ` ${duplicates.length} duplicates were skipped.`;
@@ -269,7 +281,7 @@ const ChapterDetail = () => {
       });
     }
   };
-  const handleAddWord = () => {
+  const handleAddWord = async () => {
     if (!newWord.word || !newWord.definition) {
       toast({
         title: "Missing information",
@@ -280,10 +292,10 @@ const ChapterDetail = () => {
     }
     if (!chapter) return;
 
-    // Clean the word before checking for duplicates
     const cleanedWord = cleanWord(newWord.word as string);
     const normalizedNewWord = normalizeForComparison(cleanedWord);
-    const wordExists = chapter.words.some(existingWord => normalizeForComparison(existingWord.word) === normalizedNewWord);
+    const wordExists = words.some(existingWord => normalizeForComparison(existingWord.word) === normalizedNewWord);
+    
     if (wordExists) {
       toast({
         title: "Duplicate word",
@@ -292,29 +304,25 @@ const ChapterDetail = () => {
       });
       return;
     }
-    const wordToAdd: Word = {
-      id: `word_${Date.now()}`,
-      word: cleanedWord,
-      definition: newWord.definition as string,
-      phonetic: newWord.phonetic || '',
-      example: newWord.example || '',
-      notes: newWord.notes || '',
-      isBookmarked: false,
-      isKnown: false,
-      difficulty: newWord.difficulty || 3,
-      topikLevel: newWord.topikLevel || '',
-      tags: newWord.tags || [],
-      createdAt: new Date().toISOString(),
-      priority: newWord.priority || 3
-    };
-    const updatedWords = [...(chapter.words || []), wordToAdd];
-    const updatedChapter = {
-      ...chapter,
-      words: updatedWords
-    };
+    
     try {
-      localStorage.setItem(`chapter_${chapterId}`, JSON.stringify(updatedChapter));
-      setChapter(updatedChapter);
+      await createWord({
+        chapter_id: chapterId!,
+        word: cleanedWord,
+        definition: newWord.definition as string,
+        phonetic: newWord.phonetic || '',
+        example: newWord.example || '',
+        notes: newWord.notes || '',
+        is_bookmarked: false,
+        is_known: false,
+        difficulty: newWord.difficulty || 3,
+        topik_level: newWord.topikLevel || '',
+        tags: newWord.tags || [],
+        priority: newWord.priority || 3
+      });
+      
+      await loadChapter(); // Reload to get fresh data
+      
       setNewWord({
         word: '',
         definition: '',
@@ -329,9 +337,10 @@ const ChapterDetail = () => {
       });
       setTagInput('');
       setIsAddingWord(false);
+      
       toast({
         title: "Word added",
-        description: `"${wordToAdd.word}" has been added to the chapter.`
+        description: `"${cleanedWord}" has been added to the chapter.`
       });
     } catch (e) {
       console.error("Error adding word:", e);
@@ -342,7 +351,7 @@ const ChapterDetail = () => {
       });
     }
   };
-  const handleQuickAddWord = () => {
+  const handleQuickAddWord = async () => {
     if (!quickNewWord.word || !quickNewWord.definition) {
       toast({
         title: "Missing information",
@@ -353,10 +362,10 @@ const ChapterDetail = () => {
     }
     if (!chapter) return;
 
-    // Clean the word before checking for duplicates
     const cleanedWord = cleanWord(quickNewWord.word);
     const normalizedNewWord = normalizeForComparison(cleanedWord);
-    const wordExists = chapter.words.some(existingWord => normalizeForComparison(existingWord.word) === normalizedNewWord);
+    const wordExists = words.some(existingWord => normalizeForComparison(existingWord.word) === normalizedNewWord);
+    
     if (wordExists) {
       toast({
         title: "Duplicate word",
@@ -365,37 +374,34 @@ const ChapterDetail = () => {
       });
       return;
     }
-    const wordToAdd: Word = {
-      id: `word_${Date.now()}`,
-      word: cleanedWord,
-      definition: quickNewWord.definition,
-      phonetic: '',
-      example: '',
-      notes: '',
-      isBookmarked: false,
-      isKnown: false,
-      difficulty: 3,
-      topikLevel: '',
-      tags: [],
-      createdAt: new Date().toISOString(),
-      priority: 3
-    };
-    const updatedWords = [...(chapter.words || []), wordToAdd];
-    const updatedChapter = {
-      ...chapter,
-      words: updatedWords
-    };
+    
     try {
-      localStorage.setItem(`chapter_${chapterId}`, JSON.stringify(updatedChapter));
-      setChapter(updatedChapter);
+      await createWord({
+        chapter_id: chapterId!,
+        word: cleanedWord,
+        definition: quickNewWord.definition,
+        phonetic: '',
+        example: '',
+        notes: '',
+        is_bookmarked: false,
+        is_known: false,
+        difficulty: 3,
+        topik_level: '',
+        tags: [],
+        priority: 3
+      });
+      
+      await loadChapter();
+      
       setQuickNewWord({
         word: '',
         definition: ''
       });
       setIsQuickAddingWord(false);
+      
       toast({
         title: "Word added",
-        description: `"${wordToAdd.word}" has been added to the chapter.`
+        description: `"${cleanedWord}" has been added to the chapter.`
       });
     } catch (e) {
       console.error("Error adding word:", e);
@@ -410,24 +416,32 @@ const ChapterDetail = () => {
     setEditingWord(word);
     setIsEditingWord(true);
   };
-  const handleSaveEditedWord = () => {
+  const handleSaveEditedWord = async () => {
     if (!editingWord || !chapter) return;
 
-    // Clean the word before saving
     const cleanedEditingWord = {
       ...editingWord,
       word: cleanWord(editingWord.word)
     };
-    const updatedWords = chapter.words.map(w => w.id === editingWord.id ? cleanedEditingWord : w);
-    const updatedChapter = {
-      ...chapter,
-      words: updatedWords
-    };
+    
     try {
-      localStorage.setItem(`chapter_${chapterId}`, JSON.stringify(updatedChapter));
-      setChapter(updatedChapter);
+      await updateWord(editingWord.id, {
+        word: cleanedEditingWord.word,
+        definition: cleanedEditingWord.definition,
+        phonetic: cleanedEditingWord.phonetic,
+        example: cleanedEditingWord.example,
+        notes: cleanedEditingWord.notes,
+        difficulty: cleanedEditingWord.difficulty,
+        topik_level: cleanedEditingWord.topikLevel,
+        tags: cleanedEditingWord.tags,
+        priority: cleanedEditingWord.priority
+      });
+      
+      await loadChapter(); // Reload to get fresh data
+      
       setIsEditingWord(false);
       setEditingWord(null);
+      
       toast({
         title: "Word updated",
         description: `"${cleanedEditingWord.word}" has been updated.`
@@ -441,18 +455,15 @@ const ChapterDetail = () => {
       });
     }
   };
-  const handleDeleteWord = (wordId: string) => {
+  const handleDeleteWord = async (wordId: string) => {
     if (!chapter) return;
-    const wordToDelete = chapter.words.find(w => w.id === wordId);
+    const wordToDelete = words.find(w => w.id === wordId);
     if (!wordToDelete) return;
-    const updatedWords = chapter.words.filter(w => w.id !== wordId);
-    const updatedChapter = {
-      ...chapter,
-      words: updatedWords
-    };
+    
     try {
-      localStorage.setItem(`chapter_${chapterId}`, JSON.stringify(updatedChapter));
-      setChapter(updatedChapter);
+      await deleteWord(wordId);
+      await loadChapter(); // Reload to get fresh data
+      
       toast({
         title: "Word deleted",
         description: `"${wordToDelete.word}" has been removed from the chapter.`
@@ -466,22 +477,20 @@ const ChapterDetail = () => {
       });
     }
   };
-  const handleMarkAsKnown = (wordId: string) => {
+  const handleMarkAsKnown = async (wordId: string) => {
     if (!chapter) return;
-    const updatedWords = chapter.words.map(w => w.id === wordId ? {
-      ...w,
-      isKnown: !w.isKnown
-    } : w);
-    const updatedChapter = {
-      ...chapter,
-      words: updatedWords
-    };
+    
+    const word = words.find(w => w.id === wordId);
+    if (!word) return;
+    
     try {
-      localStorage.setItem(`chapter_${chapterId}`, JSON.stringify(updatedChapter));
-      setChapter(updatedChapter);
+      await updateWord(wordId, { is_known: !word.isKnown });
+      await loadChapter(); // Reload to get fresh data
+      
+      const updatedWord = words.find(w => w.id === wordId);
       toast({
-        title: updatedWords.find(w => w.id === wordId)?.isKnown ? "Word marked as known" : "Word unmarked",
-        description: `"${updatedWords.find(w => w.id === wordId)?.word}" has been ${updatedWords.find(w => w.id === wordId)?.isKnown ? 'moved to Known Words' : 'unmarked as known'}.`
+        title: updatedWord?.isKnown ? "Word unmarked" : "Word marked as known",
+        description: `"${word.word}" has been ${updatedWord?.isKnown ? 'unmarked as known' : 'moved to Known Words'}.`
       });
     } catch (e) {
       console.error("Error updating word known status:", e);
@@ -493,7 +502,7 @@ const ChapterDetail = () => {
     }
   };
   const handleStartQuiz = () => {
-    if (!chapter || !chapter.words || chapter.words.length === 0) {
+    if (!chapter || !words || words.length === 0) {
       toast({
         title: "No words available",
         description: "Add some words to this chapter before starting a quiz.",
@@ -501,7 +510,7 @@ const ChapterDetail = () => {
       });
       return;
     }
-    const availableWords = chapter.words.filter(word => !word.isKnown);
+    const availableWords = words.filter(word => !word.isKnown);
     if (availableWords.length === 0) {
       toast({
         title: "No words to quiz",
@@ -513,7 +522,7 @@ const ChapterDetail = () => {
     navigate(`/quiz/${chapterId}`);
   };
   const handleStartFlashcards = () => {
-    if (!chapter || !chapter.words || chapter.words.length === 0) {
+    if (!chapter || !words || words.length === 0) {
       toast({
         title: "No words available",
         description: "Add some words to this chapter before starting flashcards.",
@@ -521,7 +530,7 @@ const ChapterDetail = () => {
       });
       return;
     }
-    const availableWords = chapter.words.filter(word => !word.isKnown);
+    const availableWords = words.filter(word => !word.isKnown);
     if (availableWords.length === 0) {
       toast({
         title: "No words to review",
@@ -550,7 +559,7 @@ const ChapterDetail = () => {
   };
 
   const handleDownloadPDF = () => {
-    if (!chapter || !chapter.words || chapter.words.length === 0) {
+    if (!chapter || !words || words.length === 0) {
       toast({
         title: "No words available",
         description: "Add some words to this chapter before downloading PDF.",
@@ -559,11 +568,10 @@ const ChapterDetail = () => {
       return;
     }
 
-    // Convert words to the format expected by PDF generator
-    const wordsForPDF = chapter.words.map(word => ({
+    const wordsForPDF = words.map(word => ({
       id: word.id,
       word: word.word,
-      translation: word.definition, // Use definition as translation
+      translation: word.definition,
       phonetic: word.phonetic,
       chapter: chapter.title
     }));
@@ -585,7 +593,7 @@ const ChapterDetail = () => {
   };
 
   const handleDownloadExcel = () => {
-    if (!chapter || !chapter.words || chapter.words.length === 0) {
+    if (!chapter || !words || words.length === 0) {
       toast({
         title: "No words available",
         description: "Add some words to this chapter before downloading Excel.",
@@ -595,10 +603,9 @@ const ChapterDetail = () => {
     }
 
     try {
-      // Create worksheet data
       const worksheetData = [
-        ['word', 'definition', 'phonetic', 'example', 'notes'], // Header
-        ...chapter.words.map(word => [
+        ['word', 'definition', 'phonetic', 'example', 'notes'],
+        ...words.map(word => [
           word.word,
           word.definition,
           word.phonetic || '',
@@ -607,14 +614,11 @@ const ChapterDetail = () => {
         ])
       ];
 
-      // Create workbook and worksheet
       const workbook = XLSX.utils.book_new();
       const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
       
-      // Add worksheet to workbook
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Vocabulary');
       
-      // Download the file
       XLSX.writeFile(workbook, `${chapter.title}-vocabulary.xlsx`);
       
       toast({
@@ -631,25 +635,20 @@ const ChapterDetail = () => {
     }
   };
 
-  const handleBookmarkToggle = (wordId: string) => {
-    if (!chapter) return;
-    const updatedWords = chapter.words.map(w => w.id === wordId ? {
-      ...w,
-      isBookmarked: !w.isBookmarked
-    } : w);
-    const updatedChapter = {
-      ...chapter,
-      words: updatedWords
-    };
+  const handleBookmarkToggle = async (wordId: string) => {
+    const word = words.find(w => w.id === wordId);
+    if (!word) return;
+    
     try {
-      localStorage.setItem(`chapter_${chapterId}`, JSON.stringify(updatedChapter));
-      setChapter(updatedChapter);
-      toast({
-        title: "Bookmark updated",
-        description: "Word bookmark status has been updated."
-      });
+      await updateWord(wordId, { is_bookmarked: !word.isBookmarked });
+      await loadChapter();
     } catch (e) {
       console.error("Error updating bookmark:", e);
+      toast({
+        title: "Error",
+        description: "Failed to update bookmark status.",
+        variant: "destructive"
+      });
     }
   };
   const filteredWords = (words: Word[]) => {
@@ -718,8 +717,8 @@ const ChapterDetail = () => {
         <p>Loading chapter...</p>
       </div>;
   }
-  const knownWords = sortWordsAlphabetically(processWordsForDisplay(chapter?.words.filter(w => w.isKnown) || []));
-  const unknownWords = sortWordsAlphabetically(processWordsForDisplay(chapter?.words.filter(w => !w.isKnown) || []));
+  const knownWords = sortWordsAlphabetically(processWordsForDisplay(words.filter(w => w.isKnown) || []));
+  const unknownWords = sortWordsAlphabetically(processWordsForDisplay(words.filter(w => !w.isKnown) || []));
   return <div className="min-h-screen bg-gray-50">
       <Navbar />
       
@@ -761,7 +760,7 @@ const ChapterDetail = () => {
         
         {mode === 'flashcards' ? <div className="py-4">
             
-            <FlashcardMode words={chapter.words.filter(w => !w.isKnown)} onComplete={handleFlashcardComplete} onBack={() => setMode('table')} onBookmark={handleBookmarkToggle} />
+            <FlashcardMode words={words.filter(w => !w.isKnown)} onComplete={handleFlashcardComplete} onBack={() => setMode('table')} onBookmark={handleBookmarkToggle} />
           </div> : <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-medium">Words</h2>
