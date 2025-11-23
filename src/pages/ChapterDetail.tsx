@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Play, Plus, Edit, Save, Trash2, FileSpreadsheet, Check, Search, FilterX, PlusCircle, ListPlus, Download, ChevronDown, Volume2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Play, Plus, Edit, Save, Trash2, FileSpreadsheet, Check, Search, FilterX, PlusCircle, ListPlus, Download, ChevronDown, Volume2, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,12 +13,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/layout/Navbar';
 import ExcelImporter from '@/components/chapters/ExcelImporter';
 import FlashcardMode from '@/components/revision/FlashcardMode';
 import { generatePDF } from '@/utils/pdfGenerator';
 import { speakKorean } from '@/utils/textToSpeech';
+import { getAllDuplicatesInChapter } from '@/utils/duplicateWordDetector';
 import * as XLSX from 'xlsx';
 interface Word {
   id: string;
@@ -80,6 +82,7 @@ const ChapterDetail = () => {
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('alphabetical');
   const [topikFilter, setTopikFilter] = useState<string>('all');
+  const [duplicatesMap, setDuplicatesMap] = useState<Map<string, any>>(new Map());
   const sortWordsAlphabetically = (words: Word[]) => {
     return [...words].sort((a, b) => a.word.toLowerCase().localeCompare(b.word.toLowerCase()));
   };
@@ -145,6 +148,13 @@ const ChapterDetail = () => {
       loadChapter();
     }
   }, [chapterId]);
+
+  useEffect(() => {
+    if (chapterId && chapter) {
+      const duplicates = getAllDuplicatesInChapter(chapterId);
+      setDuplicatesMap(duplicates);
+    }
+  }, [chapterId, chapter]);
   const loadChapter = () => {
     try {
       const chapterStr = localStorage.getItem(`chapter_${chapterId}`);
@@ -859,9 +869,34 @@ const ChapterDetail = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredWords(unknownWords).length > 0 ? filteredWords(unknownWords).map(word => <TableRow key={word.id}>
+                      {filteredWords(unknownWords).length > 0 ? filteredWords(unknownWords).map(word => {
+                        const duplicateInfo = duplicatesMap.get(word.id);
+                        return (
+                          <TableRow key={word.id}>
                             <TableCell className="font-medium">
-                              <div>{word.word}</div>
+                              <div className="flex items-center gap-2">
+                                <span>{word.word}</span>
+                                {duplicateInfo && duplicateInfo.isDuplicate && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div className="flex items-center gap-1 text-orange-600">
+                                          <Copy className="h-3.5 w-3.5" />
+                                          <span className="text-xs font-medium">{duplicateInfo.occurrenceCount}</span>
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <div className="text-xs">
+                                          <p className="font-semibold mb-1">Also appears in:</p>
+                                          {duplicateInfo.otherChapters.map((ch: any, idx: number) => (
+                                            <p key={idx}>• {ch.title}</p>
+                                          ))}
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
                               {word.phonetic && <div className="text-xs text-muted-foreground">{word.phonetic}</div>}
                             </TableCell>
                             <TableCell>
@@ -900,7 +935,9 @@ const ChapterDetail = () => {
                                 </Button>
                               </div>
                             </TableCell>
-                          </TableRow>) : <TableRow>
+                          </TableRow>
+                        );
+                      }) : <TableRow>
                           <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                             {searchQuery || difficultyFilter !== 'all' || topikFilter !== 'all' ? 'No words match your filters' : 'No words to learn in this chapter'}
                           </TableCell>
@@ -912,12 +949,37 @@ const ChapterDetail = () => {
               
               <TabsContent value="cards">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  {filteredWords(unknownWords).length > 0 ? filteredWords(unknownWords).map(word => <div key={word.id} className="border rounded-md p-4 hover:shadow-sm transition-shadow bg-card">
+                  {filteredWords(unknownWords).length > 0 ? filteredWords(unknownWords).map(word => {
+                    const duplicateInfo = duplicatesMap.get(word.id);
+                    return (
+                      <div key={word.id} className="border rounded-md p-4 hover:shadow-sm transition-shadow bg-card">
                         <div className="flex justify-between items-start gap-3">
                           <div className="flex-1">
                             <div className="flex items-start justify-between mb-2">
                               <div>
-                                <h3 className="font-medium text-lg">{word.word}</h3>
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-medium text-lg">{word.word}</h3>
+                                  {duplicateInfo && duplicateInfo.isDuplicate && (
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <div className="flex items-center gap-1 text-orange-600">
+                                            <Copy className="h-3.5 w-3.5" />
+                                            <span className="text-xs font-medium">{duplicateInfo.occurrenceCount}</span>
+                                          </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <div className="text-xs">
+                                            <p className="font-semibold mb-1">Also appears in:</p>
+                                            {duplicateInfo.otherChapters.map((ch: any, idx: number) => (
+                                              <p key={idx}>• {ch.title}</p>
+                                            ))}
+                                          </div>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  )}
+                                </div>
                                 {word.phonetic && <p className="text-sm text-muted-foreground mb-1">{word.phonetic}</p>}
                               </div>
                               <div className="flex gap-2 text-xs">
@@ -953,7 +1015,9 @@ const ChapterDetail = () => {
                             </Button>
                           </div>
                         </div>
-                      </div>) : <div className="col-span-2 text-center py-10 border rounded-md bg-card">
+                      </div>
+                    );
+                  }) : <div className="col-span-2 text-center py-10 border rounded-md bg-card">
                       <BookOpen className="h-10 w-10 text-muted mx-auto mb-2" />
                       <p className="text-muted-foreground">
                         {searchQuery || difficultyFilter !== 'all' || topikFilter !== 'all' ? 'No words match your filters' : 'No words to learn in this chapter'}
@@ -975,9 +1039,34 @@ const ChapterDetail = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredWords(knownWords).length > 0 ? filteredWords(knownWords).map(word => <TableRow key={word.id}>
+                      {filteredWords(knownWords).length > 0 ? filteredWords(knownWords).map(word => {
+                        const duplicateInfo = duplicatesMap.get(word.id);
+                        return (
+                          <TableRow key={word.id}>
                             <TableCell className="font-medium">
-                              <div>{word.word}</div>
+                              <div className="flex items-center gap-2">
+                                <span>{word.word}</span>
+                                {duplicateInfo && duplicateInfo.isDuplicate && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div className="flex items-center gap-1 text-orange-600">
+                                          <Copy className="h-3.5 w-3.5" />
+                                          <span className="text-xs font-medium">{duplicateInfo.occurrenceCount}</span>
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <div className="text-xs">
+                                          <p className="font-semibold mb-1">Also appears in:</p>
+                                          {duplicateInfo.otherChapters.map((ch: any, idx: number) => (
+                                            <p key={idx}>• {ch.title}</p>
+                                          ))}
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
                               {word.phonetic && <div className="text-xs text-muted-foreground">{word.phonetic}</div>}
                             </TableCell>
                             <TableCell>
@@ -1005,18 +1094,20 @@ const ChapterDetail = () => {
                                 <Button variant="ghost" size="sm" onClick={() => speakKorean(word.word)} className="h-8 w-8 p-0" title="Pronounce">
                                   <Volume2 className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm" onClick={() => handleMarkAsKnown(word.id)} className="h-8 w-8 p-0 text-green-500" title="Mark as unknown">
-                                  <Check className="h-4 w-4" />
+                                <Button variant="ghost" size="sm" onClick={() => handleMarkAsKnown(word.id)} className="h-8 w-8 p-0" title="Unmark as known">
+                                  <Check className="h-4 w-4 text-green-600" />
                                 </Button>
                                 <Button variant="ghost" size="sm" onClick={() => handleEditWord(word)} className="h-8 w-8 p-0" title="Edit word">
                                   <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm" onClick={() => handleDeleteWord(word.id)} className="h-8 w-8 p-0 text-destructive hover:text-destructive" title="Delete word">
+                                <Button variant="ghost" size="sm" onClick={() => handleDeleteWord(word.id)} className="h-8 w-8 p-0 text-red-500 hover:text-red-600" title="Delete word">
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </TableCell>
-                          </TableRow>) : <TableRow>
+                          </TableRow>
+                        );
+                      }) : <TableRow>
                           <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                             {searchQuery || difficultyFilter !== 'all' || topikFilter !== 'all' ? 'No words match your filters' : 'No known words in this chapter yet'}
                           </TableCell>

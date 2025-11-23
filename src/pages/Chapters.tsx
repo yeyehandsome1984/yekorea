@@ -7,6 +7,7 @@ import Navbar from '@/components/layout/Navbar';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -228,8 +229,11 @@ const Chapters = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [chapterToDelete, setChapterToDelete] = useState<string | null>(null);
+  const [chapterToRename, setChapterToRename] = useState<string | null>(null);
   const [newChapterTitle, setNewChapterTitle] = useState('');
+  const [renameChapterTitle, setRenameChapterTitle] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [importChapterId, setImportChapterId] = useState<string | null>(null);
@@ -353,6 +357,18 @@ const Chapters = () => {
       });
       return;
     }
+
+    // Check for duplicate names
+    const duplicateExists = chapters.some(c => c.title.toLowerCase() === newChapterTitle.trim().toLowerCase());
+    if (duplicateExists) {
+      toast({
+        title: "Error",
+        description: "A chapter with this name already exists. Please use a different name.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const newId = (Math.max(0, ...chapters.map(c => parseInt(c.id))) + 1).toString();
     const newChapter = {
       id: newId,
@@ -377,6 +393,70 @@ const Chapters = () => {
     };
     localStorage.setItem(`chapter_${newId}`, JSON.stringify(chapterData));
     navigate(`/chapters/${newId}`);
+  };
+
+  const openRenameDialog = (id: string) => {
+    const chapter = chapters.find(c => c.id === id);
+    if (chapter) {
+      setChapterToRename(id);
+      setRenameChapterTitle(chapter.title);
+      setShowRenameDialog(true);
+    }
+  };
+
+  const handleRenameChapter = () => {
+    if (!chapterToRename || !renameChapterTitle.trim()) {
+      toast({
+        title: "Error",
+        description: "Chapter title cannot be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check for duplicate names (excluding the current chapter)
+    const duplicateExists = chapters.some(c => 
+      c.id !== chapterToRename && c.title.toLowerCase() === renameChapterTitle.trim().toLowerCase()
+    );
+    if (duplicateExists) {
+      toast({
+        title: "Error",
+        description: "A chapter with this name already exists. Please use a different name.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const updatedChapters = chapters.map(chapter =>
+      chapter.id === chapterToRename
+        ? { ...chapter, title: renameChapterTitle.trim() }
+        : chapter
+    );
+
+    setChapters(updatedChapters);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedChapters));
+
+    // Also update the chapter data
+    const chapterDataKey = `chapter_${chapterToRename}`;
+    const chapterDataStr = localStorage.getItem(chapterDataKey);
+    if (chapterDataStr) {
+      try {
+        const chapterData = JSON.parse(chapterDataStr);
+        chapterData.title = renameChapterTitle.trim();
+        localStorage.setItem(chapterDataKey, JSON.stringify(chapterData));
+      } catch (e) {
+        console.error("Error updating chapter data:", e);
+      }
+    }
+
+    setShowRenameDialog(false);
+    setChapterToRename(null);
+    setRenameChapterTitle('');
+
+    toast({
+      title: "Chapter renamed",
+      description: `Chapter has been renamed to "${renameChapterTitle.trim()}".`
+    });
   };
   const openDeleteDialog = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -880,7 +960,16 @@ const Chapters = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredChapters.map(chapter => <div key={chapter.id} className="relative">
-              <ChapterCard id={chapter.id} title={chapter.title} wordCount={chapter.wordCount} progress={chapter.progress} isBookmarked={chapter.isBookmarked} onToggleBookmark={handleToggleBookmark} onClick={() => navigate(`/chapters/${chapter.id}`)} />
+              <ChapterCard 
+                id={chapter.id} 
+                title={chapter.title} 
+                wordCount={chapter.wordCount} 
+                progress={chapter.progress} 
+                isBookmarked={chapter.isBookmarked} 
+                onToggleBookmark={handleToggleBookmark} 
+                onRename={openRenameDialog}
+                onClick={() => navigate(`/chapters/${chapter.id}`)} 
+              />
               <div className="absolute top-2 right-2 flex gap-2">
                 
                 <Button variant="ghost" size="sm" onClick={e => openDeleteDialog(chapter.id, e)} className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full" title="Delete chapter">
@@ -926,6 +1015,39 @@ const Chapters = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Rename Chapter</DialogTitle>
+              <DialogDescription>
+                Enter a new name for this chapter. Chapter names must be unique.
+              </DialogDescription>
+            </DialogHeader>
+            <Input 
+              placeholder="Enter new chapter name" 
+              value={renameChapterTitle} 
+              onChange={e => setRenameChapterTitle(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  handleRenameChapter();
+                }
+              }}
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setShowRenameDialog(false);
+                setChapterToRename(null);
+                setRenameChapterTitle('');
+              }}>
+                Cancel
+              </Button>
+              <Button onClick={handleRenameChapter}>
+                Rename
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <AlertDialog open={showImportDialog} onOpenChange={setShowImportDialog}>
           <AlertDialogContent className="max-w-2xl">
