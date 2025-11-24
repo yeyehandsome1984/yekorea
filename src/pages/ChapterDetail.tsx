@@ -1343,7 +1343,17 @@ const ChapterDetail = () => {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <div>{word.definition}</div>
+                              <div className="space-y-1">
+                                <div>{word.definition}</div>
+                                {word.example && (
+                                  <div className="text-sm mt-2 pt-2 border-t border-border/30">
+                                    <div className="text-muted-foreground">{word.example}</div>
+                                    {word.notes && (
+                                      <div className="text-xs text-muted-foreground/70 mt-1">{word.notes}</div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                               {word.tags && word.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-1 mt-1">
                                   {word.tags.map((tag, idx) => (
@@ -1503,7 +1513,17 @@ const ChapterDetail = () => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div>{word.definition}</div>
+                            <div className="space-y-1">
+                              <div>{word.definition}</div>
+                              {word.example && (
+                                <div className="text-sm mt-2 pt-2 border-t border-border/30">
+                                  <div className="text-muted-foreground">{word.example}</div>
+                                  {word.notes && (
+                                    <div className="text-xs text-muted-foreground/70 mt-1">{word.notes}</div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                             {word.tags && word.tags.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {word.tags.map((tag, idx) => (
