@@ -1100,7 +1100,6 @@ const ChapterDetail = () => {
         ) : (
           <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-medium">Words</h2>
               <div className="flex items-center gap-2">
                 <Button 
                   onClick={() => {
@@ -1283,9 +1282,8 @@ const ChapterDetail = () => {
                       <TableRow>
                         {bulkSelectMode && <TableHead className="w-12"></TableHead>}
                         <TableHead>Korean</TableHead>
-                        <TableHead>English</TableHead>
+                        <TableHead>Definition</TableHead>
                         <TableHead>Level</TableHead>
-                        <TableHead>TOPIK</TableHead>
                         <TableHead className="w-[100px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -1311,7 +1309,7 @@ const ChapterDetail = () => {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <div className="space-y-1">
+                              <div className="space-y-1 text-sm">
                                 <div>{word.definition}</div>
                                 {word.example && (
                                   <div className="text-sm mt-2 pt-2 border-t border-border/30">
@@ -1336,11 +1334,6 @@ const ChapterDetail = () => {
                               </div>
                             </TableCell>
                             <TableCell>
-                              {word.topikLevel && (
-                                <Badge variant="secondary" className="text-xs">{word.topikLevel}</Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
                               <div className="flex items-center space-x-1">
                                 <Button variant="ghost" size="sm" onClick={() => speakKorean(word.word)} className="h-8 w-8 p-0" title="Pronounce">
                                   <Volume2 className="h-4 w-4" />
@@ -1360,7 +1353,7 @@ const ChapterDetail = () => {
                         );
                       }) : (
                         <TableRow>
-                          <TableCell colSpan={bulkSelectMode ? 6 : 5} className="text-center py-6 text-muted-foreground">
+                          <TableCell colSpan={bulkSelectMode ? 5 : 4} className="text-center py-6 text-muted-foreground">
                             {searchQuery || difficultyFilter !== 'all' || topikFilter !== 'all' ? 'No words match your filters' : 'No words to learn in this chapter'}
                           </TableCell>
                         </TableRow>
@@ -1463,9 +1456,8 @@ const ChapterDetail = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Korean</TableHead>
-                        <TableHead>English</TableHead>
+                        <TableHead>Definition</TableHead>
                         <TableHead>Level</TableHead>
-                        <TableHead>TOPIK</TableHead>
                         <TableHead className="w-[100px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -1481,7 +1473,7 @@ const ChapterDetail = () => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="space-y-1">
+                            <div className="space-y-1 text-sm">
                               <div>{word.definition}</div>
                               {word.example && (
                                 <div className="text-sm mt-2 pt-2 border-t border-border/30">
@@ -1506,11 +1498,6 @@ const ChapterDetail = () => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {word.topikLevel && (
-                              <Badge variant="secondary" className="text-xs">{word.topikLevel}</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
                             <div className="flex items-center space-x-1">
                               <Button variant="ghost" size="sm" onClick={() => speakKorean(word.word)} className="h-8 w-8 p-0" title="Pronounce">
                                 <Volume2 className="h-4 w-4" />
@@ -1529,7 +1516,7 @@ const ChapterDetail = () => {
                         </TableRow>
                       )) : (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                          <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
                             {searchQuery || difficultyFilter !== 'all' || topikFilter !== 'all' ? 'No known words match your filters' : 'No known words in this chapter'}
                           </TableCell>
                         </TableRow>
