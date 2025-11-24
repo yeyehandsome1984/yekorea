@@ -89,6 +89,7 @@ const ChapterDetail = () => {
   const [koreanDefinition, setKoreanDefinition] = useState('');
   const [isAutoFetching, setIsAutoFetching] = useState(false);
   const [fetchTimeoutId, setFetchTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [isFetchingForEdit, setIsFetchingForEdit] = useState(false);
   const [tagInput, setTagInput] = useState<string>('');
   const [quickNewWord, setQuickNewWord] = useState({
     word: '',
@@ -157,6 +158,77 @@ const ChapterDetail = () => {
     setFetchTimeoutId(newTimeoutId);
   }, [fetchTimeoutId, autoFetchWordData]);
 
+
+  // Fetch definition for existing word (only populate empty fields)
+  const fetchDefinitionForExistingWord = async () => {
+    if (!editingWord || !editingWord.word.trim()) {
+      toast({
+        title: "No word to fetch",
+        description: "Please enter a Korean word first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const apiKey = localStorage.getItem('gemini_api_key');
+    if (!apiKey) {
+      toast({
+        title: "API Key Required",
+        description: "Please set your Gemini API key in the settings first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsFetchingForEdit(true);
+    try {
+      const cached = getStoredWordMeaning(editingWord.word);
+      const meaningData = cached || await fetchWordMeaningFromApi(editingWord.word, apiKey);
+      
+      // Only populate empty fields - don't overwrite existing data
+      setEditingWord(prev => {
+        if (!prev) return prev;
+        
+        // Split existing definition to check if it has Korean meaning already
+        const definitionParts = prev.definition?.split('\n\n') || [];
+        const hasKoreanDefinition = definitionParts.length > 1;
+        
+        return {
+          ...prev,
+          definition: prev.definition || meaningData.englishMeaning,
+          phonetic: prev.phonetic || meaningData.pronunciation,
+          example: prev.example || meaningData.exampleKorean,
+          notes: prev.notes || meaningData.exampleEnglish,
+        };
+      });
+
+      // If definition doesn't have Korean meaning, add it
+      if (editingWord.definition && !editingWord.definition.includes('\n\n')) {
+        setEditingWord(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            definition: `${meaningData.koreanMeaning}\n\n${prev.definition || meaningData.englishMeaning}`
+          };
+        });
+      }
+
+      toast({
+        title: "Definition fetched",
+        description: "Missing fields have been populated from Gemini API."
+      });
+    } catch (error) {
+      console.error('Error fetching word data:', error);
+      toast({
+        title: "Error fetching definition",
+        description: error instanceof Error ? error.message : "Failed to fetch word data",
+        variant: "destructive"
+      });
+    } finally {
+      setIsFetchingForEdit(false);
+    }
+  };
+  
   const sortWordsAlphabetically = (words: Word[]) => {
     return [...words].sort((a, b) => a.word.toLowerCase().localeCompare(b.word.toLowerCase()));
   };
@@ -1367,7 +1439,27 @@ const ChapterDetail = () => {
       }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Vocabulary</DialogTitle>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Edit Vocabulary</span>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={fetchDefinitionForExistingWord}
+                disabled={isFetchingForEdit}
+              >
+                {isFetchingForEdit ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Fetching...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Fetch Definition
+                  </>
+                )}
+              </Button>
+            </DialogTitle>
           </DialogHeader>
           
           {editingWord && (
@@ -1382,22 +1474,27 @@ const ChapterDetail = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-phonetic">Romanization</Label>
+                  <Label htmlFor="edit-phonetic">Pronunciation (Hangul)</Label>
                   <Input 
                     id="edit-phonetic" 
                     value={editingWord.phonetic} 
                     onChange={e => setEditingWord({ ...editingWord, phonetic: e.target.value })} 
+                    placeholder="Korean pronunciation guide"
                   />
                 </div>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="edit-definition">English Meaning</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="edit-definition">Definition (Korean + English)</Label>
+                  <span className="text-xs text-muted-foreground">Korean meaning appears first if available</span>
+                </div>
                 <Textarea 
                   id="edit-definition" 
                   value={editingWord.definition} 
                   onChange={e => setEditingWord({ ...editingWord, definition: e.target.value })} 
-                  rows={2} 
+                  rows={3} 
+                  placeholder="Korean meaning&#10;&#10;English meaning"
                 />
               </div>
               
