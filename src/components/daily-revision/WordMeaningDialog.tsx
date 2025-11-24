@@ -168,15 +168,10 @@ const WordMeaningDialog = ({ word, open, onOpenChange }: WordMeaningDialogProps)
   };
 
   const checkWordMeaning = async (word: string): Promise<void> => {
-    if (!apiKey) {
-      setShowApiKeyInput(true);
-      return;
-    }
-
     setWordMeaning(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const meaningData = await fetchWordMeaningFromApi(word, apiKey);
+      const meaningData = await fetchWordMeaningFromApi(word);
       
       // Validate API response before storing
       if (isValidWordMeaningData(meaningData)) {

@@ -79,79 +79,32 @@ export const storeWordMeaning = (word: string, meaningData: WordMeaningData): vo
 };
 
 /**
- * Fetches word meaning from Gemini API
+ * Fetches word meaning from Lovable AI via edge function
  */
-export const fetchWordMeaningFromApi = async (word: string, apiKey: string): Promise<WordMeaningData> => {
-  const prompt = `Provide information about the Korean word "${word}" in this exact format:
+export const fetchWordMeaningFromApi = async (word: string): Promise<WordMeaningData> => {
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+  const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-Word: ${word}
-
-English Meaning: [Provide a concise English definition in 1-2 lines]
-
-Korean Meaning: [Provide a Korean language definition/explanation in 1-2 lines]
-
-Pronunciation: [Provide Korean hangul pronunciation guide]
-
-Example Korean: [Provide one example sentence in Korean using this word]
-
-Example English: [Provide English translation of the example sentence]
-
-Keep all responses brief and concise.`;
-  
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/fetch-word-meaning`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
     },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{
-          text: prompt
-        }]
-      }]
-    })
+    body: JSON.stringify({ word })
   });
 
-  const data = await response.json();
-  
-  if (data.error) {
-    console.error("Gemini API error:", data.error);
-    throw new Error(data.error.message || 'Failed to get meaning');
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to fetch word meaning');
   }
-  
-  const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  console.log("Raw API response:", responseText);
-  
-  // Parse the response text to extract the relevant parts
-  const englishMeaningMatch = responseText.match(/English Meaning:\s*(.*?)(?=\n|$)/);
-  const englishMeaning = englishMeaningMatch?.[1]?.trim() || 'No meaning found';
-  
-  const koreanMeaningMatch = responseText.match(/Korean Meaning:\s*(.*?)(?=\n|$)/);
-  const koreanMeaning = koreanMeaningMatch?.[1]?.trim() || 'No Korean meaning found';
-  
-  const pronunciationMatch = responseText.match(/Pronunciation:\s*(.*?)(?=\n|$)/);
-  const pronunciation = pronunciationMatch?.[1]?.trim() || '';
-  
-  const exampleKoreanMatch = responseText.match(/Example Korean:\s*(.*?)(?=\n|$)/);
-  const exampleKorean = exampleKoreanMatch?.[1]?.trim() || '';
-  
-  const exampleEnglishMatch = responseText.match(/Example English:\s*(.*?)(?=\n|$)/);
-  const exampleEnglish = exampleEnglishMatch?.[1]?.trim() || '';
-  
-  const parsedData = {
-    englishMeaning,
-    koreanMeaning,
-    pronunciation,
-    exampleKorean,
-    exampleEnglish
-  };
 
-  console.log("Parsed data:", parsedData);
+  const data = await response.json();
 
   // Validate parsed data before returning
-  if (!isValidWordMeaningData(parsedData)) {
+  if (!isValidWordMeaningData(data)) {
     throw new Error('Invalid data structure received from API');
   }
 
-  return parsedData;
+  return data;
 };
