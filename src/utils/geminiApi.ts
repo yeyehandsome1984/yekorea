@@ -1,9 +1,10 @@
 
 interface WordMeaningData {
   englishMeaning: string;
-  hindiMeaning: string;
-  synonyms: string[];
-  examples: string[];
+  koreanMeaning: string;
+  pronunciation: string;
+  exampleKorean: string;
+  exampleEnglish: string;
 }
 
 /**
@@ -15,11 +16,12 @@ const isValidWordMeaningData = (data: any): data is WordMeaningData => {
       data &&
       typeof data === 'object' &&
       typeof data.englishMeaning === 'string' &&
-      typeof data.hindiMeaning === 'string' &&
-      Array.isArray(data.synonyms) &&
-      Array.isArray(data.examples) &&
+      typeof data.koreanMeaning === 'string' &&
+      typeof data.pronunciation === 'string' &&
+      typeof data.exampleKorean === 'string' &&
+      typeof data.exampleEnglish === 'string' &&
       data.englishMeaning.length > 0 &&
-      data.hindiMeaning.length > 0
+      data.koreanMeaning.length > 0
     );
   } catch (error) {
     console.error("Error validating word meaning data:", error);
@@ -80,17 +82,19 @@ export const storeWordMeaning = (word: string, meaningData: WordMeaningData): vo
  * Fetches word meaning from Gemini API
  */
 export const fetchWordMeaningFromApi = async (word: string, apiKey: string): Promise<WordMeaningData> => {
-  const prompt = `Provide information about the word "${word}" in this exact format:
+  const prompt = `Provide information about the Korean word "${word}" in this exact format:
 
 Word: ${word}
 
-Meaning: [Provide a short and concise definition in 1-2 lines]
+English Meaning: [Provide a concise English definition in 1-2 lines]
 
-Hindi: [Provide exactly 2 Hindi meanings/translations separated by comma]
+Korean Meaning: [Provide a Korean language definition/explanation in 1-2 lines]
 
-Synonyms: [Provide exactly 2 synonyms separated by comma]
+Pronunciation: [Provide Korean hangul pronunciation guide]
 
-Example: [Provide one short example sentence]
+Example Korean: [Provide one example sentence in Korean using this word]
+
+Example English: [Provide English translation of the example sentence]
 
 Keep all responses brief and concise.`;
   
@@ -119,25 +123,27 @@ Keep all responses brief and concise.`;
   console.log("Raw API response:", responseText);
   
   // Parse the response text to extract the relevant parts
-  const meaningMatch = responseText.match(/Meaning:\s*(.*?)(?=\n|$)/);
-  const englishMeaning = meaningMatch?.[1]?.trim() || 'No meaning found';
+  const englishMeaningMatch = responseText.match(/English Meaning:\s*(.*?)(?=\n|$)/);
+  const englishMeaning = englishMeaningMatch?.[1]?.trim() || 'No meaning found';
   
-  const hindiMatch = responseText.match(/Hindi:\s*(.*?)(?=\n|$)/);
-  const hindiMeaning = hindiMatch?.[1]?.trim() || 'No Hindi meaning found';
+  const koreanMeaningMatch = responseText.match(/Korean Meaning:\s*(.*?)(?=\n|$)/);
+  const koreanMeaning = koreanMeaningMatch?.[1]?.trim() || 'No Korean meaning found';
   
-  const synonymsMatch = responseText.match(/Synonyms:\s*(.*?)(?=\n|$)/);
-  const synonymsText = synonymsMatch?.[1]?.trim() || '';
-  const synonyms = synonymsText ? synonymsText.split(',').map(s => s.trim()).slice(0, 2) : [];
+  const pronunciationMatch = responseText.match(/Pronunciation:\s*(.*?)(?=\n|$)/);
+  const pronunciation = pronunciationMatch?.[1]?.trim() || '';
   
-  const exampleMatch = responseText.match(/Example:\s*(.*?)(?=\n|$)/);
-  const exampleText = exampleMatch?.[1]?.trim() || '';
-  const examples = exampleText ? [exampleText] : [];
+  const exampleKoreanMatch = responseText.match(/Example Korean:\s*(.*?)(?=\n|$)/);
+  const exampleKorean = exampleKoreanMatch?.[1]?.trim() || '';
+  
+  const exampleEnglishMatch = responseText.match(/Example English:\s*(.*?)(?=\n|$)/);
+  const exampleEnglish = exampleEnglishMatch?.[1]?.trim() || '';
   
   const parsedData = {
     englishMeaning,
-    hindiMeaning,
-    synonyms,
-    examples
+    koreanMeaning,
+    pronunciation,
+    exampleKorean,
+    exampleEnglish
   };
 
   console.log("Parsed data:", parsedData);
