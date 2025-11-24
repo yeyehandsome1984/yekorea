@@ -910,6 +910,14 @@ const ChapterDetail = () => {
                 >
                   {bulkSelectMode ? "Cancel Selection" : "Bulk Copy"}
                 </Button>
+                <Button onClick={() => setIsAddingWord(true)} size="sm" variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add New Word
+                </Button>
+                <Button onClick={() => setIsBulkAddingWords(true)} size="sm" variant="outline">
+                  <ListPlus className="h-4 w-4 mr-2" />
+                  Bulk Add Words
+                </Button>
                 <Badge variant="outline">
                   {unknownWords.length} to learn
                 </Badge>
@@ -1301,18 +1309,6 @@ const ChapterDetail = () => {
                 </div>
               </TabsContent>
             </Tabs>
-            
-            <div className="mt-4 flex justify-center gap-2">
-              <Button onClick={() => setIsAddingWord(true)} variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Add New Word
-              </Button>
-              
-              <Button onClick={() => setIsBulkAddingWords(true)} variant="outline">
-                <ListPlus className="h-4 w-4 mr-2" />
-                Bulk Add Words
-              </Button>
-            </div>
           </div>
         )}
       </main>

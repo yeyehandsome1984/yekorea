@@ -267,6 +267,9 @@ const Chapters = () => {
         });
       }
 
+      // Sort by word count (descending - more words at top)
+      chaptersWithStats.sort((a, b) => b.wordCount - a.wordCount);
+
       setChapters(chaptersWithStats);
     } catch (error) {
       console.error("Error loading chapters from database:", error);
