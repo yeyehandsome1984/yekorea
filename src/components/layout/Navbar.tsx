@@ -1,10 +1,10 @@
-import React from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Book, Menu, LogIn, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import React from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Book, Menu, LogIn, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Navbar = () => {
   const { toast } = useToast();
@@ -13,8 +13,8 @@ const Navbar = () => {
   const [session, setSession] = React.useState<any>(null);
 
   // Hide navbar completely when in quiz mode
-  const isQuizMode = location.pathname === '/daily-revision' && location.search.includes('mode=quiz');
-  
+  const isQuizMode = location.pathname === "/daily-revision" && location.search.includes("mode=quiz");
+
   if (isQuizMode) {
     return null;
   }
@@ -40,7 +40,7 @@ const Navbar = () => {
         title: "Logged out",
         description: "You have been successfully logged out.",
       });
-      navigate('/');
+      navigate("/");
     } catch (error: any) {
       toast({
         title: "Error",
@@ -51,14 +51,14 @@ const Navbar = () => {
   };
 
   const navLinks = [
-    { name: 'Home', path: '/' },
-    { name: 'Chapters', path: '/chapters' },
-    { name: 'Sentences', path: '/sentences' },
-    { name: 'TOPIK Resources', path: '/topik-resources' },
-    { name: 'Learning Plans', path: '/learning-plans' },
-    { name: 'Daily Revision', path: '/daily-revision' },
-    { name: 'Bookmarks', path: '/bookmarks' },
-    { name: 'Progress', path: '/progress' },
+    { name: "Home", path: "/" },
+    { name: "Chapters", path: "/chapters" },
+    { name: "Sentences", path: "/sentences" },
+    { name: "TOPIK Resources", path: "/topik-resources" },
+    { name: "Learning Plans", path: "/learning-plans" },
+    { name: "Daily Revision", path: "/daily-revision" },
+    { name: "Bookmarks", path: "/bookmarks" },
+    { name: "Progress", path: "/progress" },
   ];
 
   return (
@@ -69,11 +69,11 @@ const Navbar = () => {
             <div className="flex-shrink-0 flex items-center">
               <Link to="/" className="flex items-center space-x-2">
                 <Book className="h-6 w-6 text-primary rounded-md" />
-                <span className="font-bold text-lg text-gray-900">叶之寒雪</span>
+                <span className="font-bold text-lg text-gray-900">叶帅学韩</span>
               </Link>
             </div>
             <nav className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              {navLinks.map(link => (
+              {navLinks.map((link) => (
                 <Link
                   key={link.name}
                   to={link.path}
@@ -86,20 +86,12 @@ const Navbar = () => {
           </div>
           <div className="flex items-center space-x-4">
             {session ? (
-              <Button
-                onClick={handleLogout}
-                variant="ghost"
-                className="flex items-center space-x-2"
-              >
+              <Button onClick={handleLogout} variant="ghost" className="flex items-center space-x-2">
                 <LogOut className="h-4 w-4" />
                 <span>Sign Out</span>
               </Button>
             ) : (
-              <Button
-                onClick={() => navigate('/auth')}
-                variant="ghost"
-                className="flex items-center space-x-2"
-              >
+              <Button onClick={() => navigate("/auth")} variant="ghost" className="flex items-center space-x-2">
                 <LogIn className="h-4 w-4" />
                 <span>Sign In</span>
               </Button>
@@ -114,12 +106,10 @@ const Navbar = () => {
                 <SheetContent>
                   <SheetHeader>
                     <SheetTitle>叶之寒雪</SheetTitle>
-                    <SheetDescription>
-                      Your Korean learning companion
-                    </SheetDescription>
+                    <SheetDescription>Your Korean learning companion</SheetDescription>
                   </SheetHeader>
                   <div className="mt-6 flex flex-col space-y-3">
-                    {navLinks.map(link => (
+                    {navLinks.map((link) => (
                       <Link
                         key={link.name}
                         to={link.path}
@@ -139,7 +129,7 @@ const Navbar = () => {
                       </Button>
                     ) : (
                       <Button
-                        onClick={() => navigate('/auth')}
+                        onClick={() => navigate("/auth")}
                         variant="ghost"
                         className="flex items-center justify-start px-3 py-2"
                       >
