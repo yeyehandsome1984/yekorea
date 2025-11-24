@@ -113,20 +113,14 @@ const ChapterDetail = () => {
   const [showBulkFetchDialog, setShowBulkFetchDialog] = useState(false);
 
   
-  // Auto-fetch word data from Gemini API
+  // Auto-fetch word data from Lovable AI
   const autoFetchWordData = useCallback(async (koreanWord: string) => {
     if (!koreanWord.trim() || koreanWord.length < 2) return;
-    
-    const apiKey = localStorage.getItem('gemini_api_key');
-    if (!apiKey) {
-      console.log('No Gemini API key found');
-      return;
-    }
 
     setIsAutoFetching(true);
     try {
       const cached = getStoredWordMeaning(koreanWord);
-      const meaningData = cached || await fetchWordMeaningFromApi(koreanWord, apiKey);
+      const meaningData = cached || await fetchWordMeaningFromApi(koreanWord);
       
       // Only populate empty fields
       setNewWord(prev => ({
@@ -173,20 +167,10 @@ const ChapterDetail = () => {
       return;
     }
 
-    const apiKey = localStorage.getItem('gemini_api_key');
-    if (!apiKey) {
-      toast({
-        title: "API Key Required",
-        description: "Please set your Gemini API key in the settings first.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setIsFetchingForEdit(true);
     try {
       const cached = getStoredWordMeaning(editingWord.word);
-      const meaningData = cached || await fetchWordMeaningFromApi(editingWord.word, apiKey);
+      const meaningData = cached || await fetchWordMeaningFromApi(editingWord.word);
       
       // Only populate empty fields - don't overwrite existing data
       setEditingWord(prev => {
@@ -196,29 +180,26 @@ const ChapterDetail = () => {
         const definitionParts = prev.definition?.split('\n\n') || [];
         const hasKoreanDefinition = definitionParts.length > 1;
         
+        // Prepare combined definition
+        let newDefinition = prev.definition;
+        if (!prev.definition) {
+          newDefinition = `${meaningData.koreanMeaning}\n\n${meaningData.englishMeaning}`;
+        } else if (!hasKoreanDefinition && meaningData.koreanMeaning) {
+          newDefinition = `${meaningData.koreanMeaning}\n\n${prev.definition}`;
+        }
+        
         return {
           ...prev,
-          definition: prev.definition || meaningData.englishMeaning,
+          definition: newDefinition,
           phonetic: prev.phonetic || meaningData.pronunciation,
           example: prev.example || meaningData.exampleKorean,
           notes: prev.notes || meaningData.exampleEnglish,
         };
       });
 
-      // If definition doesn't have Korean meaning, add it
-      if (editingWord.definition && !editingWord.definition.includes('\n\n')) {
-        setEditingWord(prev => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            definition: `${meaningData.koreanMeaning}\n\n${prev.definition || meaningData.englishMeaning}`
-          };
-        });
-      }
-
       toast({
         title: "Definition fetched",
-        description: "Missing fields have been populated from Gemini API."
+        description: "Word information has been populated for empty fields.",
       });
     } catch (error) {
       console.error('Error fetching word data:', error);
@@ -234,16 +215,6 @@ const ChapterDetail = () => {
 
   // Bulk fetch missing definitions for all words
   const handleBulkFetchDefinitions = async () => {
-    const apiKey = localStorage.getItem('gemini_api_key');
-    if (!apiKey) {
-      toast({
-        title: "API Key Required",
-        description: "Please set your Gemini API key first. The system will prompt you when you try to add a word.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     // Find words with missing data
     const wordsNeedingUpdate = words.filter(word => 
       !word.definition || 
@@ -264,9 +235,6 @@ const ChapterDetail = () => {
   };
 
   const confirmBulkFetch = async () => {
-    const apiKey = localStorage.getItem('gemini_api_key');
-    if (!apiKey) return;
-
     const wordsNeedingUpdate = words.filter(word => 
       !word.definition || 
       !word.phonetic || 
@@ -297,7 +265,7 @@ const ChapterDetail = () => {
 
         // Fetch from API or cache
         const cached = getStoredWordMeaning(word.word);
-        const meaningData = cached || await fetchWordMeaningFromApi(word.word, apiKey);
+        const meaningData = cached || await fetchWordMeaningFromApi(word.word);
 
         // Check if definition has Korean meaning already
         const definitionParts = word.definition?.split('\n\n') || [];
