@@ -174,10 +174,32 @@ const ChapterDetail = () => {
   }, [chapterId]);
 
   useEffect(() => {
-    if (chapterId && words.length > 0) {
-      const duplicates = getAllDuplicatesInChapter(chapterId);
-      setDuplicatesMap(duplicates);
-    }
+    const fetchDuplicates = async () => {
+      if (chapterId && words.length > 0) {
+        try {
+          // Fetch all words from all chapters to check for duplicates
+          const allChaptersData = await fetchAllChapters();
+          const allWordsPromises = allChaptersData.map(async (ch) => {
+            const chWords = await fetchWordsByChapter(ch.id);
+            return chWords.map(w => ({
+              word: w.word,
+              chapterId: ch.id,
+              chapterTitle: ch.title,
+              wordId: w.id
+            }));
+          });
+          const allWordsArrays = await Promise.all(allWordsPromises);
+          const allWords = allWordsArrays.flat();
+          
+          const duplicates = getAllDuplicatesInChapter(chapterId, words, allWords);
+          setDuplicatesMap(duplicates);
+        } catch (error) {
+          console.error("Error fetching duplicates:", error);
+        }
+      }
+    };
+    
+    fetchDuplicates();
   }, [chapterId, words]);
 
   const loadChapter = async () => {
