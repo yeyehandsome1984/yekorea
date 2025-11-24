@@ -64,9 +64,10 @@ const TypingLoader = ({ word }: { word: string }) => {
 
 interface WordMeaning {
   englishMeaning: string;
-  hindiMeaning: string;
-  synonyms: string[];
-  examples: string[];
+  koreanMeaning: string;
+  pronunciation: string;
+  exampleKorean: string;
+  exampleEnglish: string;
   loading: boolean;
   error: string | null;
 }
@@ -81,9 +82,10 @@ const WordMeaningDialog = ({ word, open, onOpenChange }: WordMeaningDialogProps)
   const { toast } = useToast();
   const [wordMeaning, setWordMeaning] = useState<WordMeaning>({
     englishMeaning: '',
-    hindiMeaning: '',
-    synonyms: [],
-    examples: [],
+    koreanMeaning: '',
+    pronunciation: '',
+    exampleKorean: '',
+    exampleEnglish: '',
     loading: false,
     error: null
   });
@@ -96,9 +98,10 @@ const WordMeaningDialog = ({ word, open, onOpenChange }: WordMeaningDialogProps)
       // Reset state first
       setWordMeaning({
         englishMeaning: '',
-        hindiMeaning: '',
-        synonyms: [],
-        examples: [],
+        koreanMeaning: '',
+        pronunciation: '',
+        exampleKorean: '',
+        exampleEnglish: '',
         loading: false,
         error: null
       });
@@ -141,11 +144,12 @@ const WordMeaningDialog = ({ word, open, onOpenChange }: WordMeaningDialogProps)
         data &&
         typeof data === 'object' &&
         typeof data.englishMeaning === 'string' &&
-        typeof data.hindiMeaning === 'string' &&
-        Array.isArray(data.synonyms) &&
-        Array.isArray(data.examples) &&
+        typeof data.koreanMeaning === 'string' &&
+        typeof data.pronunciation === 'string' &&
+        typeof data.exampleKorean === 'string' &&
+        typeof data.exampleEnglish === 'string' &&
         data.englishMeaning.length > 0 &&
-        data.hindiMeaning.length > 0
+        data.koreanMeaning.length > 0
       );
     } catch (error) {
       console.error("Error validating word meaning data:", error);
@@ -288,26 +292,29 @@ const WordMeaningDialog = ({ word, open, onOpenChange }: WordMeaningDialogProps)
                 </div>
 
                 <div>
-                  <h4 className="text-md font-semibold text-gray-700">Meaning:</h4>
+                  <h4 className="text-md font-semibold text-gray-700">English Meaning:</h4>
                   <p className="text-sm">{wordMeaning.englishMeaning}</p>
                 </div>
 
                 <div>
-                  <h4 className="text-md font-semibold text-gray-700">Hindi:</h4>
-                  <p className="text-sm">{wordMeaning.hindiMeaning}</p>
+                  <h4 className="text-md font-semibold text-gray-700">Korean Meaning:</h4>
+                  <p className="text-sm">{wordMeaning.koreanMeaning}</p>
                 </div>
 
-                {wordMeaning.synonyms.length > 0 && (
+                {wordMeaning.pronunciation && (
                   <div>
-                    <h4 className="text-md font-semibold text-gray-700">Synonyms:</h4>
-                    <p className="text-sm">{wordMeaning.synonyms.join(', ')}</p>
+                    <h4 className="text-md font-semibold text-gray-700">Pronunciation:</h4>
+                    <p className="text-sm">{wordMeaning.pronunciation}</p>
                   </div>
                 )}
 
-                {wordMeaning.examples.length > 0 && (
+                {wordMeaning.exampleKorean && (
                   <div>
                     <h4 className="text-md font-semibold text-gray-700">Example:</h4>
-                    <p className="text-sm italic">"{wordMeaning.examples[0]}"</p>
+                    <p className="text-sm">{wordMeaning.exampleKorean}</p>
+                    {wordMeaning.exampleEnglish && (
+                      <p className="text-sm text-gray-600 italic mt-1">{wordMeaning.exampleEnglish}</p>
+                    )}
                   </div>
                 )}
               </div>

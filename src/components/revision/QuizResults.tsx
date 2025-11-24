@@ -236,11 +236,11 @@ const AnswerCard: React.FC<AnswerCardProps> = ({
       console.error('Error checking bookmark status:', error);
     }
 
-    // Check for stored Hindi meaning
+    // Check for stored Korean meaning
     try {
       const storedMeaning = getStoredWordMeaning(answer.word.word);
-      if (storedMeaning && storedMeaning.hindiMeaning) {
-        setHindiMeaning(storedMeaning.hindiMeaning);
+      if (storedMeaning && storedMeaning.koreanMeaning) {
+        setHindiMeaning(storedMeaning.koreanMeaning);
       }
     } catch (error) {
       console.error('Error getting stored word meaning:', error);

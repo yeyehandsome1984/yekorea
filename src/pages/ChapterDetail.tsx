@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Play, Plus, Edit, Save, Trash2, FileSpreadsheet, Check, Search, FilterX, PlusCircle, ListPlus, Download, ChevronDown, Volume2, Copy } from 'lucide-react';
+import { ArrowLeft, BookOpen, Play, Plus, Edit, Save, Trash2, FileSpreadsheet, Check, Search, FilterX, PlusCircle, ListPlus, Download, ChevronDown, Volume2, Copy, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -33,6 +33,7 @@ import { generatePDF } from '@/utils/pdfGenerator';
 import { speakKorean } from '@/utils/textToSpeech';
 import { getAllDuplicatesInChapter } from '@/utils/duplicateWordDetector';
 import { fetchChapter, fetchWordsByChapter, createWord, updateWord, deleteWord, createWords, fetchAllChapters } from '@/lib/database';
+import { fetchWordMeaningFromApi, getStoredWordMeaning } from '@/utils/geminiApi';
 import * as XLSX from 'xlsx';
 
 interface Word {
@@ -85,6 +86,9 @@ const ChapterDetail = () => {
     tags: [],
     priority: 3
   });
+  const [koreanDefinition, setKoreanDefinition] = useState('');
+  const [isAutoFetching, setIsAutoFetching] = useState(false);
+  const [fetchTimeoutId, setFetchTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [tagInput, setTagInput] = useState<string>('');
   const [quickNewWord, setQuickNewWord] = useState({
     word: '',
@@ -103,6 +107,55 @@ const ChapterDetail = () => {
   const [allChapters, setAllChapters] = useState<Chapter[]>([]);
   const [copyTargetChapters, setCopyTargetChapters] = useState<string[]>([]);
   const [showCopyConfirmation, setShowCopyConfirmation] = useState(false);
+
+  
+  // Auto-fetch word data from Gemini API
+  const autoFetchWordData = useCallback(async (koreanWord: string) => {
+    if (!koreanWord.trim() || koreanWord.length < 2) return;
+    
+    const apiKey = localStorage.getItem('gemini_api_key');
+    if (!apiKey) {
+      console.log('No Gemini API key found');
+      return;
+    }
+
+    setIsAutoFetching(true);
+    try {
+      const cached = getStoredWordMeaning(koreanWord);
+      const meaningData = cached || await fetchWordMeaningFromApi(koreanWord, apiKey);
+      
+      // Only populate empty fields
+      setNewWord(prev => ({
+        ...prev,
+        definition: prev.definition || meaningData.englishMeaning,
+        phonetic: prev.phonetic || meaningData.pronunciation,
+        example: prev.example || meaningData.exampleKorean,
+        notes: prev.notes || meaningData.exampleEnglish,
+      }));
+      setKoreanDefinition(prev => prev || meaningData.koreanMeaning);
+    } catch (error) {
+      console.error('Error auto-fetching word data:', error);
+    } finally {
+      setIsAutoFetching(false);
+    }
+  }, []);
+
+  // Debounced word input handler
+  const handleWordInputChange = useCallback((value: string) => {
+    setNewWord(prev => ({ ...prev, word: value }));
+    
+    // Clear existing timeout
+    if (fetchTimeoutId) {
+      clearTimeout(fetchTimeoutId);
+    }
+    
+    // Set new timeout for auto-fetch
+    const newTimeoutId = setTimeout(() => {
+      autoFetchWordData(value);
+    }, 1000); // 1 second debounce
+    
+    setFetchTimeoutId(newTimeoutId);
+  }, [fetchTimeoutId, autoFetchWordData]);
 
   const sortWordsAlphabetically = (words: Word[]) => {
     return [...words].sort((a, b) => a.word.toLowerCase().localeCompare(b.word.toLowerCase()));
@@ -326,11 +379,16 @@ const ChapterDetail = () => {
 
     const cleanedWord = cleanWord(newWord.word as string);
     
+    // Combine Korean and English definitions
+    const combinedDefinition = koreanDefinition 
+      ? `${koreanDefinition}\n\n${newWord.definition}`
+      : newWord.definition;
+    
     try {
       await createWord({
         chapter_id: chapterId!,
         word: cleanedWord,
-        definition: newWord.definition as string,
+        definition: combinedDefinition as string,
         phonetic: newWord.phonetic || '',
         example: newWord.example || '',
         notes: newWord.notes || '',
@@ -356,6 +414,7 @@ const ChapterDetail = () => {
         tags: [],
         priority: 3
       });
+      setKoreanDefinition('');
       setTagInput('');
       setIsAddingWord(false);
       
@@ -1470,23 +1529,42 @@ const ChapterDetail = () => {
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="new-word">Korean (Hangul) *</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="new-word">Korean (Hangul) *</Label>
+                  {isAutoFetching && (
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Fetching data...
+                    </span>
+                  )}
+                </div>
                 <Input 
                   id="new-word" 
                   value={newWord.word} 
-                  onChange={e => setNewWord({ ...newWord, word: e.target.value })} 
+                  onChange={e => handleWordInputChange(e.target.value)} 
                   placeholder="안녕하세요"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="new-phonetic">Romanization</Label>
+                <Label htmlFor="new-phonetic">Pronunciation (Hangul)</Label>
                 <Input 
                   id="new-phonetic" 
                   value={newWord.phonetic} 
                   onChange={e => setNewWord({ ...newWord, phonetic: e.target.value })} 
-                  placeholder="annyeonghaseyo"
+                  placeholder="Korean pronunciation guide"
                 />
               </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="new-korean-definition">Korean Meaning</Label>
+              <Textarea 
+                id="new-korean-definition" 
+                value={koreanDefinition} 
+                onChange={e => setKoreanDefinition(e.target.value)} 
+                placeholder="Korean language definition"
+                rows={2} 
+              />
             </div>
             
             <div className="space-y-2">
