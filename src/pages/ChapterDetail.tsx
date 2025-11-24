@@ -1302,9 +1302,9 @@ const ChapterDetail = () => {
                             )}
                             <TableCell className="font-medium">
                               <div>
-                                <span>{word.word}</span>
+                                <span className="text-base">{word.word}</span>
                                 {word.phonetic && (
-                                  <span className="text-sm text-muted-foreground ml-2">[{word.phonetic}]</span>
+                                  <span className="text-xs text-muted-foreground ml-2">[{word.phonetic}]</span>
                                 )}
                               </div>
                             </TableCell>
