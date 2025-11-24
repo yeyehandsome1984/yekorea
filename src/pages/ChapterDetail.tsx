@@ -1335,29 +1335,12 @@ const ChapterDetail = () => {
                               </TableCell>
                             )}
                             <TableCell className="font-medium">
-                              <div className="flex items-center gap-2">
+                              <div>
                                 <span>{word.word}</span>
-                                {duplicateInfo && duplicateInfo.isDuplicate && (
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <div className="flex items-center text-orange-600">
-                                          <Copy className="h-3.5 w-3.5" />
-                                        </div>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <div className="text-xs">
-                                          <p className="font-semibold mb-1">Also appears in:</p>
-                                          {duplicateInfo.otherChapters.map((ch: any, idx: number) => (
-                                            <p key={idx}>• {ch.title}</p>
-                                          ))}
-                                        </div>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
+                                {word.phonetic && (
+                                  <span className="text-sm text-muted-foreground ml-2">[{word.phonetic}]</span>
                                 )}
                               </div>
-                              {word.phonetic && <div className="text-xs text-muted-foreground">{word.phonetic}</div>}
                             </TableCell>
                             <TableCell>
                               <div>{word.definition}</div>
@@ -1512,8 +1495,12 @@ const ChapterDetail = () => {
                       {filteredWords(knownWords).length > 0 ? filteredWords(knownWords).map(word => (
                         <TableRow key={word.id}>
                           <TableCell className="font-medium">
-                            <div>{word.word}</div>
-                            {word.phonetic && <div className="text-xs text-muted-foreground">{word.phonetic}</div>}
+                            <div>
+                              <span>{word.word}</span>
+                              {word.phonetic && (
+                                <span className="text-sm text-muted-foreground ml-2">[{word.phonetic}]</span>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div>{word.definition}</div>
