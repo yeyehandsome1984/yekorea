@@ -108,6 +108,9 @@ const ChapterDetail = () => {
   const [allChapters, setAllChapters] = useState<Chapter[]>([]);
   const [copyTargetChapters, setCopyTargetChapters] = useState<string[]>([]);
   const [showCopyConfirmation, setShowCopyConfirmation] = useState(false);
+  const [isBulkFetching, setIsBulkFetching] = useState(false);
+  const [bulkFetchProgress, setBulkFetchProgress] = useState({ current: 0, total: 0, updated: 0, skipped: 0, failed: 0 });
+  const [showBulkFetchDialog, setShowBulkFetchDialog] = useState(false);
 
   
   // Auto-fetch word data from Gemini API
@@ -227,6 +230,122 @@ const ChapterDetail = () => {
     } finally {
       setIsFetchingForEdit(false);
     }
+  };
+
+  // Bulk fetch missing definitions for all words
+  const handleBulkFetchDefinitions = async () => {
+    const apiKey = localStorage.getItem('gemini_api_key');
+    if (!apiKey) {
+      toast({
+        title: "API Key Required",
+        description: "Please set your Gemini API key first. The system will prompt you when you try to add a word.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Find words with missing data
+    const wordsNeedingUpdate = words.filter(word => 
+      !word.definition || 
+      !word.phonetic || 
+      !word.example || 
+      !word.notes
+    );
+
+    if (wordsNeedingUpdate.length === 0) {
+      toast({
+        title: "No words need updating",
+        description: "All words in this chapter have complete definitions.",
+      });
+      return;
+    }
+
+    setShowBulkFetchDialog(true);
+  };
+
+  const confirmBulkFetch = async () => {
+    const apiKey = localStorage.getItem('gemini_api_key');
+    if (!apiKey) return;
+
+    const wordsNeedingUpdate = words.filter(word => 
+      !word.definition || 
+      !word.phonetic || 
+      !word.example || 
+      !word.notes
+    );
+
+    setIsBulkFetching(true);
+    setBulkFetchProgress({ current: 0, total: wordsNeedingUpdate.length, updated: 0, skipped: 0, failed: 0 });
+
+    let updated = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    for (let i = 0; i < wordsNeedingUpdate.length; i++) {
+      const word = wordsNeedingUpdate[i];
+      setBulkFetchProgress(prev => ({ ...prev, current: i + 1 }));
+
+      try {
+        // Check if word really needs updating
+        const needsUpdate = !word.definition || !word.phonetic || !word.example || !word.notes;
+        
+        if (!needsUpdate) {
+          skipped++;
+          setBulkFetchProgress(prev => ({ ...prev, skipped: prev.skipped + 1 }));
+          continue;
+        }
+
+        // Fetch from API or cache
+        const cached = getStoredWordMeaning(word.word);
+        const meaningData = cached || await fetchWordMeaningFromApi(word.word, apiKey);
+
+        // Check if definition has Korean meaning already
+        const definitionParts = word.definition?.split('\n\n') || [];
+        const hasKoreanDefinition = definitionParts.length > 1;
+
+        // Prepare combined definition
+        let newDefinition = word.definition;
+        if (!word.definition) {
+          newDefinition = `${meaningData.koreanMeaning}\n\n${meaningData.englishMeaning}`;
+        } else if (!hasKoreanDefinition && meaningData.koreanMeaning) {
+          newDefinition = `${meaningData.koreanMeaning}\n\n${word.definition}`;
+        }
+
+        // Update word with only missing fields
+        await updateWord(word.id, {
+          definition: newDefinition || word.definition,
+          phonetic: word.phonetic || meaningData.pronunciation,
+          example: word.example || meaningData.exampleKorean,
+          notes: word.notes || meaningData.exampleEnglish,
+        });
+
+        updated++;
+        setBulkFetchProgress(prev => ({ ...prev, updated: prev.updated + 1 }));
+
+        // Add delay to avoid rate limiting (500ms between requests)
+        if (i < wordsNeedingUpdate.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      } catch (error) {
+        console.error(`Error fetching definition for ${word.word}:`, error);
+        failed++;
+        setBulkFetchProgress(prev => ({ ...prev, failed: prev.failed + 1 }));
+        
+        // Continue with next word even if this one failed
+        continue;
+      }
+    }
+
+    // Reload chapter to show updated words
+    await loadChapter();
+
+    setIsBulkFetching(false);
+    setShowBulkFetchDialog(false);
+
+    toast({
+      title: "Bulk fetch complete",
+      description: `Updated: ${updated}, Skipped: ${skipped}, Failed: ${failed}`,
+    });
   };
   
   const sortWordsAlphabetically = (words: Word[]) => {
@@ -1035,6 +1154,24 @@ const ChapterDetail = () => {
                 <Button onClick={() => setIsBulkAddingWords(true)} size="sm" variant="outline">
                   <ListPlus className="h-4 w-4 mr-2" />
                   Bulk Add Words
+                </Button>
+                <Button 
+                  onClick={handleBulkFetchDefinitions} 
+                  size="sm" 
+                  variant="outline"
+                  disabled={isBulkFetching}
+                >
+                  {isBulkFetching ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Fetching...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Fetch Missing Data
+                    </>
+                  )}
                 </Button>
                 <Badge variant="outline">
                   {unknownWords.length} to learn
@@ -1880,6 +2017,75 @@ const ChapterDetail = () => {
             <Button onClick={handleBulkAddWords}>
               Add Words
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showBulkFetchDialog} onOpenChange={setShowBulkFetchDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bulk Fetch Missing Definitions</DialogTitle>
+            <DialogDescription>
+              {isBulkFetching ? (
+                "Fetching definitions from Gemini API..."
+              ) : (
+                `Found ${words.filter(w => !w.definition || !w.phonetic || !w.example || !w.notes).length} words with missing data. This will fetch and populate empty fields.`
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {isBulkFetching && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Progress</span>
+                  <span>{bulkFetchProgress.current} / {bulkFetchProgress.total}</span>
+                </div>
+                <div className="w-full bg-secondary rounded-full h-2.5">
+                  <div 
+                    className="bg-primary h-2.5 rounded-full transition-all duration-300" 
+                    style={{ width: `${(bulkFetchProgress.current / bulkFetchProgress.total) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{bulkFetchProgress.updated}</div>
+                  <div className="text-muted-foreground">Updated</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-yellow-600">{bulkFetchProgress.skipped}</div>
+                  <div className="text-muted-foreground">Skipped</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-600">{bulkFetchProgress.failed}</div>
+                  <div className="text-muted-foreground">Failed</div>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground text-center">
+                Please wait... This may take a few minutes depending on the number of words.
+              </p>
+            </div>
+          )}
+          
+          <DialogFooter>
+            {!isBulkFetching ? (
+              <>
+                <Button variant="outline" onClick={() => setShowBulkFetchDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={confirmBulkFetch}>
+                  Start Fetching
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" disabled>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Processing...
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
