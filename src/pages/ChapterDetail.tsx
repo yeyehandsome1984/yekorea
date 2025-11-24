@@ -253,7 +253,6 @@ const ChapterDetail = () => {
 
     const lines = bulkWordsText.trim().split('\n').filter(line => line.trim());
     const wordsToAdd: any[] = [];
-    const duplicates: string[] = [];
     const invalidEntries: string[] = [];
     
     for (let i = 0; i < lines.length; i += 2) {
@@ -264,15 +263,6 @@ const ChapterDetail = () => {
         continue;
       }
       const cleanedWord = cleanWord(wordLine);
-      const normalizedNewWord = normalizeForComparison(cleanedWord);
-
-      const existsInChapter = words.some(existingWord => normalizeForComparison(existingWord.word) === normalizedNewWord);
-      const existsInBatch = wordsToAdd.some(batchWord => normalizeForComparison(batchWord.word) === normalizedNewWord);
-      
-      if (existsInChapter || existsInBatch) {
-        duplicates.push(cleanedWord);
-        continue;
-      }
       
       wordsToAdd.push({
         chapter_id: chapterId,
@@ -307,9 +297,6 @@ const ChapterDetail = () => {
       setIsBulkAddingWords(false);
       
       let message = `${wordsToAdd.length} words have been added successfully.`;
-      if (duplicates.length > 0) {
-        message += ` ${duplicates.length} duplicates were skipped.`;
-      }
       if (invalidEntries.length > 0) {
         message += ` ${invalidEntries.length} invalid entries were skipped.`;
       }
@@ -338,17 +325,6 @@ const ChapterDetail = () => {
     if (!chapter) return;
 
     const cleanedWord = cleanWord(newWord.word as string);
-    const normalizedNewWord = normalizeForComparison(cleanedWord);
-    const wordExists = words.some(existingWord => normalizeForComparison(existingWord.word) === normalizedNewWord);
-    
-    if (wordExists) {
-      toast({
-        title: "Duplicate word",
-        description: `The word "${cleanedWord}" already exists in this chapter.`,
-        variant: "destructive"
-      });
-      return;
-    }
     
     try {
       await createWord({
@@ -408,17 +384,6 @@ const ChapterDetail = () => {
     if (!chapter) return;
 
     const cleanedWord = cleanWord(quickNewWord.word);
-    const normalizedNewWord = normalizeForComparison(cleanedWord);
-    const wordExists = words.some(existingWord => normalizeForComparison(existingWord.word) === normalizedNewWord);
-    
-    if (wordExists) {
-      toast({
-        title: "Duplicate word",
-        description: `The word "${cleanedWord}" already exists in this chapter.`,
-        variant: "destructive"
-      });
-      return;
-    }
     
     try {
       await createWord({
