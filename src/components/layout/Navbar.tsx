@@ -57,6 +57,7 @@ const Navbar = () => {
     { name: "TOPIK Resources", path: "/topik-resources" },
     { name: "Learning Plans", path: "/learning-plans" },
     { name: "Daily Revision", path: "/daily-revision" },
+    { name: "Study Tracker", path: "/study-tracker" },
     { name: "Bookmarks", path: "/bookmarks" },
     { name: "Progress", path: "/progress" },
   ];

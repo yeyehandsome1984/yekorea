@@ -18,6 +18,7 @@ import QuizMode from "./pages/QuizMode";
 import Auth from "./pages/Auth";
 import Sentences from "./pages/Sentences";
 import TopikResources from "./pages/TopikResources";
+import StudyTracker from "./pages/StudyTracker";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => {
             <Route path="/topik-resources" element={<TopikResources />} />
             <Route path="/learning-plans" element={<LearningPlans />} />
             <Route path="/daily-revision" element={<DailyRevision />} />
+            <Route path="/study-tracker" element={<StudyTracker />} />
             <Route path="/bookmarks" element={<Bookmarks />} />
             <Route path="/progress" element={<Progress />} />
             <Route path="/quiz/:chapterId" element={<QuizMode />} />

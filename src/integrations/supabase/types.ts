@@ -38,6 +38,39 @@ export type Database = {
         }
         Relationships: []
       }
+      study_sessions: {
+        Row: {
+          created_at: string
+          hours: number
+          id: string
+          image_urls: string[] | null
+          study_date: string
+          summary: string | null
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          hours?: number
+          id?: string
+          image_urls?: string[] | null
+          study_date?: string
+          summary?: string | null
+          topic: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          hours?: number
+          id?: string
+          image_urls?: string[] | null
+          study_date?: string
+          summary?: string | null
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       words: {
         Row: {
           chapter_id: string
