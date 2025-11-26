@@ -227,8 +227,7 @@ export default function StudyTracker() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Study Tracker</h1>
+        <div className="flex justify-end items-center mb-6">
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -388,13 +387,7 @@ export default function StudyTracker() {
 
         {/* Filters */}
         <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <Filter className="mr-2 h-4 w-4" />
-              Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label>Topic</Label>
@@ -470,10 +463,7 @@ export default function StudyTracker() {
 
         {/* Sessions Table */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Study Sessions ({filteredSessions.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {loading ? (
               <p className="text-center py-8 text-muted-foreground">Loading...</p>
             ) : filteredSessions.length === 0 ? (
