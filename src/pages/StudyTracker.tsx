@@ -11,12 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar as CalendarIcon, Filter, Trash2, Image as ImageIcon, X } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Filter, Trash2, Image as ImageIcon, X, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
   fetchAllStudySessions,
   createStudySession,
+  updateStudySession,
   deleteStudySession,
   uploadStudyImage,
   StudySession,
@@ -29,6 +30,7 @@ export default function StudyTracker() {
   const [filteredSessions, setFilteredSessions] = useState<StudySession[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<StudySession | null>(null);
   const { toast } = useToast();
 
   // Form states
@@ -148,6 +150,19 @@ export default function StudyTracker() {
     }
   };
 
+  const handleEdit = (session: StudySession) => {
+    setEditingSession(session);
+    setSelectedTopic(PRESET_TOPICS.includes(session.topic) ? session.topic : "custom");
+    if (!PRESET_TOPICS.includes(session.topic)) {
+      setCustomTopic(session.topic);
+    }
+    setStudyDate(new Date(session.study_date));
+    setSummary(session.summary || "");
+    setHours(session.hours.toString());
+    setUploadedImages(session.image_urls || []);
+    setDialogOpen(true);
+  };
+
   const handleSubmit = async () => {
     const finalTopic = selectedTopic === "custom" ? customTopic : selectedTopic;
 
@@ -161,18 +176,33 @@ export default function StudyTracker() {
     }
 
     try {
-      await createStudySession({
-        topic: finalTopic,
-        study_date: format(studyDate, "yyyy-MM-dd"),
-        summary: summary || null,
-        hours: parseFloat(hours),
-        image_urls: uploadedImages,
-      });
+      if (editingSession) {
+        await updateStudySession(editingSession.id, {
+          topic: finalTopic,
+          study_date: format(studyDate, "yyyy-MM-dd"),
+          summary: summary || null,
+          hours: parseFloat(hours),
+          image_urls: uploadedImages,
+        });
 
-      toast({
-        title: "Success",
-        description: "Study session added",
-      });
+        toast({
+          title: "Success",
+          description: "Study session updated",
+        });
+      } else {
+        await createStudySession({
+          topic: finalTopic,
+          study_date: format(studyDate, "yyyy-MM-dd"),
+          summary: summary || null,
+          hours: parseFloat(hours),
+          image_urls: uploadedImages,
+        });
+
+        toast({
+          title: "Success",
+          description: "Study session added",
+        });
+      }
 
       // Reset form
       setSelectedTopic("");
@@ -181,12 +211,13 @@ export default function StudyTracker() {
       setSummary("");
       setHours("");
       setUploadedImages([]);
+      setEditingSession(null);
       setDialogOpen(false);
       loadSessions();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to add study session",
+        description: editingSession ? "Failed to update study session" : "Failed to add study session",
         variant: "destructive",
       });
     }
@@ -235,14 +266,137 @@ export default function StudyTracker() {
           >
             {showSummary ? "Hide" : "Show"} Total Hours
           </Button>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <Dialog open={dialogOpen} onOpenChange={(open) => {
+            setDialogOpen(open);
+            if (!open) {
+              setEditingSession(null);
+              setSelectedTopic("");
+              setCustomTopic("");
+              setStudyDate(new Date());
+              setSummary("");
+              setHours("");
+              setUploadedImages([]);
+            }
+          }}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Study Session
               </Button>
             </DialogTrigger>
-...
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{editingSession ? "Edit Study Session" : "Add Study Session"}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>Topic</Label>
+                  <Select value={selectedTopic} onValueChange={setSelectedTopic}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select topic" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRESET_TOPICS.map(topic => (
+                        <SelectItem key={topic} value={topic}>{topic}</SelectItem>
+                      ))}
+                      <SelectItem value="custom">Custom Topic...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {selectedTopic === "custom" && (
+                    <Input
+                      className="mt-2"
+                      placeholder="Enter custom topic"
+                      value={customTopic}
+                      onChange={(e) => setCustomTopic(e.target.value)}
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <Label>Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn("w-full justify-start text-left font-normal", !studyDate && "text-muted-foreground")}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {studyDate ? format(studyDate, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={studyDate}
+                        onSelect={(date) => date && setStudyDate(date)}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div>
+                  <Label>Hours</Label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    placeholder="e.g., 2.5"
+                    value={hours}
+                    onChange={(e) => setHours(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label>Summary</Label>
+                  <Textarea
+                    placeholder="What did you study? (You can also paste images here)"
+                    value={summary}
+                    onChange={(e) => setSummary(e.target.value)}
+                    onPaste={handlePaste}
+                    rows={6}
+                  />
+                </div>
+
+                <div>
+                  <Label>Images/Screenshots</Label>
+                  <div className="mt-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                      className="cursor-pointer"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      You can also paste images directly into the summary field
+                    </p>
+                  </div>
+                  {uploadedImages.length > 0 && (
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      {uploadedImages.map((url, index) => (
+                        <div key={index} className="relative group">
+                          <img src={url} alt={`Upload ${index + 1}`} className="w-full h-32 object-cover rounded border" />
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100"
+                            onClick={() => removeImage(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <Button onClick={handleSubmit} className="w-full" disabled={uploading}>
+                  {uploading ? "Uploading..." : (editingSession ? "Update Session" : "Add Session")}
+                </Button>
+              </div>
+            </DialogContent>
           </Dialog>
         </div>
 
@@ -406,14 +560,24 @@ export default function StudyTracker() {
                           )}
                         </TableCell>
                         <TableCell className="text-right py-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7"
-                            onClick={() => handleDelete(session.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7"
+                              onClick={() => handleEdit(session)}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7"
+                              onClick={() => handleDelete(session.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
