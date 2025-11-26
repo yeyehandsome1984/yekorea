@@ -44,6 +44,7 @@ export default function StudyTracker() {
   const [filterTopic, setFilterTopic] = useState<string>("all");
   const [filterDateFrom, setFilterDateFrom] = useState<Date | undefined>();
   const [filterDateTo, setFilterDateTo] = useState<Date | undefined>();
+  const [showSummary, setShowSummary] = useState(true);
 
   // Get all unique topics
   const allTopics = Array.from(new Set(sessions.map(s => s.topic)));
@@ -352,26 +353,38 @@ export default function StudyTracker() {
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Total Hours</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalHours.toFixed(1)}h</div>
-            </CardContent>
-          </Card>
-          {Object.entries(hoursByTopic).map(([topic, hrs]) => (
-            <Card key={topic}>
+        <div className="mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSummary(!showSummary)}
+          >
+            {showSummary ? "Hide" : "Show"} Total Hours
+          </Button>
+        </div>
+        
+        {showSummary && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">{topic}</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Hours</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{hrs.toFixed(1)}h</div>
+                <div className="text-2xl font-bold">{totalHours.toFixed(1)}h</div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+            {Object.entries(hoursByTopic).map(([topic, hrs]) => (
+              <Card key={topic}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">{topic}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{hrs.toFixed(1)}h</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {/* Filters */}
         <Card className="mb-6">
@@ -458,7 +471,7 @@ export default function StudyTracker() {
         {/* Sessions Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Study Sessions ({filteredSessions.length})</CardTitle>
+            <CardTitle className="text-lg">Study Sessions ({filteredSessions.length})</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -469,34 +482,34 @@ export default function StudyTracker() {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Topic</TableHead>
-                      <TableHead>Hours</TableHead>
-                      <TableHead>Summary</TableHead>
-                      <TableHead>Images</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                    <TableRow className="h-8">
+                      <TableHead className="text-xs py-2">Date</TableHead>
+                      <TableHead className="text-xs py-2">Topic</TableHead>
+                      <TableHead className="text-xs py-2">Hours</TableHead>
+                      <TableHead className="text-xs py-2">Summary</TableHead>
+                      <TableHead className="text-xs py-2">Images</TableHead>
+                      <TableHead className="text-xs py-2 text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredSessions.map((session) => (
-                      <TableRow key={session.id}>
-                        <TableCell className="whitespace-nowrap">
+                      <TableRow key={session.id} className="h-10">
+                        <TableCell className="whitespace-nowrap text-xs py-2">
                           {format(new Date(session.study_date), "MMM dd, yyyy")}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-xs py-2">
                           <span className="font-medium">{session.topic}</span>
                         </TableCell>
-                        <TableCell>{session.hours}h</TableCell>
-                        <TableCell className="max-w-md">
-                          <div className="text-sm line-clamp-2">{session.summary || "-"}</div>
+                        <TableCell className="text-xs py-2">{session.hours}h</TableCell>
+                        <TableCell className="max-w-md text-xs py-2">
+                          <div className="line-clamp-2">{session.summary || "-"}</div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-xs py-2">
                           {session.image_urls && session.image_urls.length > 0 ? (
                             <Popover>
                               <PopoverTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <ImageIcon className="h-4 w-4 mr-1" />
+                                <Button variant="ghost" size="sm" className="h-7 text-xs px-2">
+                                  <ImageIcon className="h-3 w-3 mr-1" />
                                   {session.image_urls.length}
                                 </Button>
                               </PopoverTrigger>
@@ -514,16 +527,17 @@ export default function StudyTracker() {
                               </PopoverContent>
                             </Popover>
                           ) : (
-                            <span className="text-muted-foreground text-sm">-</span>
+                            <span className="text-muted-foreground">-</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right py-2">
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="h-7"
                             onClick={() => handleDelete(session.id)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </TableCell>
                       </TableRow>
