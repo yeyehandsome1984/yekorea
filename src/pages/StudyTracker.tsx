@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Calendar as CalendarIcon, Filter, Trash2, Image as ImageIcon, X, Pencil, FileText, Download } from "lucide-react";
+import { PdfThumbnail } from "@/components/study-tracker/PdfThumbnail";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
@@ -891,17 +892,19 @@ export default function StudyTracker() {
                       </div>
                       
                       {/* Certificate thumbnail preview */}
-                      <div className="mb-3 w-full h-32 rounded border overflow-hidden">
+                      <div className="mb-3 w-full h-32 rounded border overflow-hidden bg-muted">
                         {cert.certificate_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                           <img 
                             src={cert.certificate_url} 
                             alt={cert.certificate_name}
                             className="w-full h-full object-cover"
                           />
+                        ) : cert.certificate_url.match(/\.pdf$/i) ? (
+                          <PdfThumbnail url={cert.certificate_url} className="w-full h-full" />
                         ) : (
                           <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-primary/5 to-primary/10">
                             <FileText className="h-12 w-12 text-primary mb-2" />
-                            <span className="text-xs text-muted-foreground">PDF Certificate</span>
+                            <span className="text-xs text-muted-foreground">Document</span>
                           </div>
                         )}
                       </div>
