@@ -891,15 +891,27 @@ export default function StudyTracker() {
                       </div>
                       
                       {/* Certificate thumbnail preview */}
-                      <div className="mb-3 w-full h-32 rounded border overflow-hidden bg-muted flex items-center justify-center">
+                      <div className="mb-3 w-full h-32 rounded border overflow-hidden bg-muted">
                         {cert.certificate_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                           <img 
                             src={cert.certificate_url} 
                             alt={cert.certificate_name}
                             className="w-full h-full object-cover"
                           />
+                        ) : cert.certificate_url.match(/\.pdf$/i) ? (
+                          <object
+                            data={cert.certificate_url}
+                            type="application/pdf"
+                            className="w-full h-full"
+                          >
+                            <div className="flex items-center justify-center h-full">
+                              <FileText className="h-12 w-12 text-muted-foreground" />
+                            </div>
+                          </object>
                         ) : (
-                          <FileText className="h-12 w-12 text-muted-foreground" />
+                          <div className="flex items-center justify-center h-full">
+                            <FileText className="h-12 w-12 text-muted-foreground" />
+                          </div>
                         )}
                       </div>
                       
