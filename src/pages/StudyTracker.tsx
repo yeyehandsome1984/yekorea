@@ -26,6 +26,7 @@ import {
 import {
   fetchAllCertificates,
   createCertificate,
+  updateCertificate,
   deleteCertificate,
   uploadCertificateFile,
   Certificate,
@@ -63,6 +64,7 @@ export default function StudyTracker() {
   // Certificate states
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [certDialogOpen, setCertDialogOpen] = useState(false);
+  const [editingCertificate, setEditingCertificate] = useState<Certificate | null>(null);
   const [certName, setCertName] = useState("");
   const [certDate, setCertDate] = useState<Date>(new Date());
   const [certDescription, setCertDescription] = useState("");
@@ -281,8 +283,17 @@ export default function StudyTracker() {
     setUploadedImages(uploadedImages.filter((_, i) => i !== index));
   };
 
+  const handleEditCertificate = (cert: Certificate) => {
+    setEditingCertificate(cert);
+    setCertName(cert.certificate_name);
+    setCertDate(new Date(cert.issue_date));
+    setCertDescription(cert.description || "");
+    setCertFile(null);
+    setCertDialogOpen(true);
+  };
+
   const handleCertificateSubmit = async () => {
-    if (!certName || !certFile) {
+    if (!certName || (!certFile && !editingCertificate)) {
       toast({
         title: "Error",
         description: "Please provide certificate name and file",
@@ -293,30 +304,55 @@ export default function StudyTracker() {
 
     try {
       setCertUploading(true);
-      const fileUrl = await uploadCertificateFile(certFile);
       
-      await createCertificate({
-        certificate_name: certName,
-        certificate_url: fileUrl,
-        issue_date: format(certDate, "yyyy-MM-dd"),
-        description: certDescription || null,
-      });
+      if (editingCertificate) {
+        // Update mode
+        const updates: Partial<Certificate> = {
+          certificate_name: certName,
+          issue_date: format(certDate, "yyyy-MM-dd"),
+          description: certDescription || null,
+        };
 
-      toast({
-        title: "Success",
-        description: "Certificate added",
-      });
+        // Only upload new file if one was selected
+        if (certFile) {
+          const fileUrl = await uploadCertificateFile(certFile);
+          updates.certificate_url = fileUrl;
+        }
+
+        await updateCertificate(editingCertificate.id, updates);
+
+        toast({
+          title: "Success",
+          description: "Certificate updated",
+        });
+      } else {
+        // Create mode
+        const fileUrl = await uploadCertificateFile(certFile!);
+        
+        await createCertificate({
+          certificate_name: certName,
+          certificate_url: fileUrl,
+          issue_date: format(certDate, "yyyy-MM-dd"),
+          description: certDescription || null,
+        });
+
+        toast({
+          title: "Success",
+          description: "Certificate added",
+        });
+      }
 
       setCertName("");
       setCertDate(new Date());
       setCertDescription("");
       setCertFile(null);
+      setEditingCertificate(null);
       setCertDialogOpen(false);
       loadCertificates();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to add certificate",
+        description: editingCertificate ? "Failed to update certificate" : "Failed to add certificate",
         variant: "destructive",
       });
     } finally {
@@ -511,6 +547,7 @@ export default function StudyTracker() {
               setCertDate(new Date());
               setCertDescription("");
               setCertFile(null);
+              setEditingCertificate(null);
             }
           }}>
             <DialogTrigger asChild>
@@ -521,7 +558,7 @@ export default function StudyTracker() {
             </DialogTrigger>
             <DialogContent className="max-w-lg">
               <DialogHeader>
-                <DialogTitle>Add Certificate</DialogTitle>
+                <DialogTitle>{editingCertificate ? "Edit Certificate" : "Add Certificate"}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
@@ -568,7 +605,7 @@ export default function StudyTracker() {
                 </div>
 
                 <div>
-                  <Label>Certificate File</Label>
+                  <Label>Certificate File {editingCertificate && "(Optional - leave empty to keep current file)"}</Label>
                   <Input
                     type="file"
                     accept="image/*,.pdf"
@@ -580,15 +617,19 @@ export default function StudyTracker() {
                     disabled={certUploading}
                     className="cursor-pointer"
                   />
-                  {certFile && (
+                  {certFile ? (
                     <p className="text-sm text-muted-foreground mt-2">
                       Selected: {certFile.name}
                     </p>
-                  )}
+                  ) : editingCertificate ? (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Current file will be kept if no new file is selected
+                    </p>
+                  ) : null}
                 </div>
 
                 <Button onClick={handleCertificateSubmit} className="w-full" disabled={certUploading}>
-                  {certUploading ? "Uploading..." : "Add Certificate"}
+                  {certUploading ? "Uploading..." : (editingCertificate ? "Update Certificate" : "Add Certificate")}
                 </Button>
               </div>
             </DialogContent>
@@ -827,17 +868,41 @@ export default function StudyTracker() {
                 {certificates.map((cert) => (
                   <Card key={cert.id} className="border">
                     <CardContent className="pt-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold text-sm">{cert.certificate_name}</h3>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteCertificate(cert.id)}
-                          className="h-6 w-6 p-0"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                      <div className="flex items-start justify-between mb-3">
+                        <h3 className="font-semibold text-sm flex-1">{cert.certificate_name}</h3>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditCertificate(cert)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteCertificate(cert.id)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
+                      
+                      {/* Certificate thumbnail preview */}
+                      <div className="mb-3 w-full h-32 rounded border overflow-hidden bg-muted flex items-center justify-center">
+                        {cert.certificate_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                          <img 
+                            src={cert.certificate_url} 
+                            alt={cert.certificate_name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <FileText className="h-12 w-12 text-muted-foreground" />
+                        )}
+                      </div>
+                      
                       <p className="text-xs text-muted-foreground mb-2">
                         Issued: {format(new Date(cert.issue_date), "MMM dd, yyyy")}
                       </p>
