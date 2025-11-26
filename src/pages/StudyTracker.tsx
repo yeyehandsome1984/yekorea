@@ -44,7 +44,7 @@ export default function StudyTracker() {
   const [filterTopic, setFilterTopic] = useState<string>("all");
   const [filterDateFrom, setFilterDateFrom] = useState<Date | undefined>();
   const [filterDateTo, setFilterDateTo] = useState<Date | undefined>();
-  const [showSummary, setShowSummary] = useState(true);
+  const [showSummary, setShowSummary] = useState(false);
 
   // Get all unique topics
   const allTopics = Array.from(new Set(sessions.map(s => s.topic)));
@@ -227,132 +227,7 @@ export default function StudyTracker() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-end items-center mb-6">
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Study Session
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Add Study Session</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>Topic</Label>
-                  <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select topic" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PRESET_TOPICS.map(topic => (
-                        <SelectItem key={topic} value={topic}>{topic}</SelectItem>
-                      ))}
-                      <SelectItem value="custom">Custom Topic...</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {selectedTopic === "custom" && (
-                    <Input
-                      className="mt-2"
-                      placeholder="Enter custom topic"
-                      value={customTopic}
-                      onChange={(e) => setCustomTopic(e.target.value)}
-                    />
-                  )}
-                </div>
-
-                <div>
-                  <Label>Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn("w-full justify-start text-left font-normal", !studyDate && "text-muted-foreground")}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {studyDate ? format(studyDate, "PPP") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={studyDate}
-                        onSelect={(date) => date && setStudyDate(date)}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div>
-                  <Label>Hours</Label>
-                  <Input
-                    type="number"
-                    step="0.5"
-                    placeholder="e.g., 2.5"
-                    value={hours}
-                    onChange={(e) => setHours(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <Label>Summary</Label>
-                  <Textarea
-                    placeholder="What did you study? (You can also paste images here)"
-                    value={summary}
-                    onChange={(e) => setSummary(e.target.value)}
-                    onPaste={handlePaste}
-                    rows={6}
-                  />
-                </div>
-
-                <div>
-                  <Label>Images/Screenshots</Label>
-                  <div className="mt-2">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      disabled={uploading}
-                      className="cursor-pointer"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      You can also paste images directly into the summary field
-                    </p>
-                  </div>
-                  {uploadedImages.length > 0 && (
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      {uploadedImages.map((url, index) => (
-                        <div key={index} className="relative group">
-                          <img src={url} alt={`Upload ${index + 1}`} className="w-full h-32 object-cover rounded border" />
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100"
-                            onClick={() => removeImage(index)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <Button onClick={handleSubmit} className="w-full" disabled={uploading}>
-                  {uploading ? "Uploading..." : "Add Session"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {/* Summary Stats */}
-        <div className="mb-4">
+        <div className="flex justify-start items-center gap-4 mb-6">
           <Button
             variant="outline"
             size="sm"
@@ -360,8 +235,18 @@ export default function StudyTracker() {
           >
             {showSummary ? "Hide" : "Show"} Total Hours
           </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Study Session
+              </Button>
+            </DialogTrigger>
+...
+          </Dialog>
         </div>
-        
+
+        {/* Summary Stats */}
         {showSummary && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <Card>
