@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      certificates: {
+        Row: {
+          certificate_name: string
+          certificate_url: string
+          created_at: string
+          description: string | null
+          id: string
+          issue_date: string
+          updated_at: string
+        }
+        Insert: {
+          certificate_name: string
+          certificate_url: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          issue_date?: string
+          updated_at?: string
+        }
+        Update: {
+          certificate_name?: string
+          certificate_url?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          issue_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chapters: {
         Row: {
           created_at: string

@@ -10,8 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar as CalendarIcon, Filter, Trash2, Image as ImageIcon, X, Pencil } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Filter, Trash2, Image as ImageIcon, X, Pencil, FileText, Download } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
@@ -22,6 +23,13 @@ import {
   uploadStudyImage,
   StudySession,
 } from "@/lib/studySessions";
+import {
+  fetchAllCertificates,
+  createCertificate,
+  deleteCertificate,
+  uploadCertificateFile,
+  Certificate,
+} from "@/lib/certificates";
 
 const PRESET_TOPICS = ["Data", "Web/App", "Korean"];
 
@@ -48,11 +56,25 @@ export default function StudyTracker() {
   const [filterDateTo, setFilterDateTo] = useState<Date | undefined>();
   const [showSummary, setShowSummary] = useState(false);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const sessionsPerPage = 20;
+
+  // Certificate states
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [certDialogOpen, setCertDialogOpen] = useState(false);
+  const [certName, setCertName] = useState("");
+  const [certDate, setCertDate] = useState<Date>(new Date());
+  const [certDescription, setCertDescription] = useState("");
+  const [certFile, setCertFile] = useState<File | null>(null);
+  const [certUploading, setCertUploading] = useState(false);
+
   // Get all unique topics
   const allTopics = Array.from(new Set(sessions.map(s => s.topic)));
 
   useEffect(() => {
     loadSessions();
+    loadCertificates();
   }, []);
 
   useEffect(() => {
@@ -72,6 +94,19 @@ export default function StudyTracker() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCertificates = async () => {
+    try {
+      const data = await fetchAllCertificates();
+      setCertificates(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load certificates",
+        variant: "destructive",
+      });
     }
   };
 
@@ -246,6 +281,68 @@ export default function StudyTracker() {
     setUploadedImages(uploadedImages.filter((_, i) => i !== index));
   };
 
+  const handleCertificateSubmit = async () => {
+    if (!certName || !certFile) {
+      toast({
+        title: "Error",
+        description: "Please provide certificate name and file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setCertUploading(true);
+      const fileUrl = await uploadCertificateFile(certFile);
+      
+      await createCertificate({
+        certificate_name: certName,
+        certificate_url: fileUrl,
+        issue_date: format(certDate, "yyyy-MM-dd"),
+        description: certDescription || null,
+      });
+
+      toast({
+        title: "Success",
+        description: "Certificate added",
+      });
+
+      setCertName("");
+      setCertDate(new Date());
+      setCertDescription("");
+      setCertFile(null);
+      setCertDialogOpen(false);
+      loadCertificates();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add certificate",
+        variant: "destructive",
+      });
+    } finally {
+      setCertUploading(false);
+    }
+  };
+
+  const handleDeleteCertificate = async (id: string) => {
+    if (!confirm("Delete this certificate?")) return;
+
+    try {
+      await deleteCertificate(id);
+      toast({
+        title: "Success",
+        description: "Certificate deleted",
+      });
+      loadCertificates();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete certificate",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Calculate total hours by topic
   const hoursByTopic = filteredSessions.reduce((acc, session) => {
     acc[session.topic] = (acc[session.topic] || 0) + Number(session.hours);
@@ -253,6 +350,14 @@ export default function StudyTracker() {
   }, {} as Record<string, number>);
 
   const totalHours = Object.values(hoursByTopic).reduce((sum, h) => sum + h, 0);
+
+  // Pagination calculations
+  const indexOfLastSession = currentPage * sessionsPerPage;
+  const indexOfFirstSession = indexOfLastSession - sessionsPerPage;
+  const currentSessions = filteredSessions.slice(indexOfFirstSession, indexOfLastSession);
+  const totalPages = Math.ceil(filteredSessions.length / sessionsPerPage);
+
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
   return (
     <div className="min-h-screen bg-background">
@@ -398,6 +503,96 @@ export default function StudyTracker() {
               </div>
             </DialogContent>
           </Dialog>
+          
+          <Dialog open={certDialogOpen} onOpenChange={(open) => {
+            setCertDialogOpen(open);
+            if (!open) {
+              setCertName("");
+              setCertDate(new Date());
+              setCertDescription("");
+              setCertFile(null);
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <FileText className="mr-2 h-4 w-4" />
+                Add Certificates
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Add Certificate</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>Certificate Name</Label>
+                  <Input
+                    placeholder="e.g., AWS Certified Developer"
+                    value={certName}
+                    onChange={(e) => setCertName(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label>Issue Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn("w-full justify-start text-left font-normal", !certDate && "text-muted-foreground")}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {certDate ? format(certDate, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={certDate}
+                        onSelect={(date) => date && setCertDate(date)}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div>
+                  <Label>Description (Optional)</Label>
+                  <Textarea
+                    placeholder="Additional details about the certificate"
+                    value={certDescription}
+                    onChange={(e) => setCertDescription(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+
+                <div>
+                  <Label>Certificate File</Label>
+                  <Input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setCertFile(e.target.files[0]);
+                      }
+                    }}
+                    disabled={certUploading}
+                    className="cursor-pointer"
+                  />
+                  {certFile && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Selected: {certFile.name}
+                    </p>
+                  )}
+                </div>
+
+                <Button onClick={handleCertificateSubmit} className="w-full" disabled={certUploading}>
+                  {certUploading ? "Uploading..." : "Add Certificate"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Summary Stats */}
@@ -521,7 +716,7 @@ export default function StudyTracker() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredSessions.map((session) => (
+                    {currentSessions.map((session) => (
                       <TableRow key={session.id} className="h-10">
                         <TableCell className="whitespace-nowrap text-xs py-2">
                           {format(new Date(session.study_date), "MMM dd, yyyy")}
@@ -585,8 +780,88 @@ export default function StudyTracker() {
                 </Table>
               </div>
             )}
+            
+            {/* Pagination */}
+            {!loading && filteredSessions.length > sessionsPerPage && (
+              <div className="mt-4">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => currentPage > 1 && paginate(currentPage - 1)}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => paginate(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => currentPage < totalPages && paginate(currentPage + 1)}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* Certificates Section */}
+        {certificates.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Certificates</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {certificates.map((cert) => (
+                  <Card key={cert.id} className="border">
+                    <CardContent className="pt-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-semibold text-sm">{cert.certificate_name}</h3>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteCertificate(cert.id)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Issued: {format(new Date(cert.issue_date), "MMM dd, yyyy")}
+                      </p>
+                      {cert.description && (
+                        <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                          {cert.description}
+                        </p>
+                      )}
+                      <a
+                        href={cert.certificate_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center text-xs text-primary hover:underline"
+                      >
+                        <Download className="h-3 w-3 mr-1" />
+                        View Certificate
+                      </a>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
