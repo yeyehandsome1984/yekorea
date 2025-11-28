@@ -1122,6 +1122,10 @@ const ChapterDetail = () => {
                   <ListPlus className="h-4 w-4 mr-2" />
                   Bulk Add Words
                 </Button>
+                <Button onClick={() => setShowExcelImport(true)} size="sm" variant="outline">
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Excel Import
+                </Button>
                 <Button 
                   onClick={handleBulkFetchDefinitions} 
                   size="sm" 
@@ -2052,13 +2056,21 @@ const ChapterDetail = () => {
         </DialogContent>
       </Dialog>
       
-      {showExcelImport && (
-        <ExcelImporter
-          chapterId={chapterId!}
-          chapterTitle={chapter.title}
-          onImportComplete={handleImportComplete}
-        />
-      )}
+      <Dialog open={showExcelImport} onOpenChange={setShowExcelImport}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Import Words from Excel</DialogTitle>
+            <DialogDescription>
+              Upload an Excel file (.xlsx or .xls) with columns: word (required), definition (required), phonetic (optional), example (optional), notes (optional)
+            </DialogDescription>
+          </DialogHeader>
+          <ExcelImporter
+            chapterId={chapterId!}
+            chapterTitle={chapter?.title || ''}
+            onImportComplete={handleImportComplete}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
