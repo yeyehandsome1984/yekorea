@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Search, Filter, BookOpen, X, Languages, Edit } from "lucide-react";
+import { Plus, Search, Filter, BookOpen, X, Languages, Edit, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +34,7 @@ import Navbar from "@/components/layout/Navbar";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAllWords } from "@/lib/database";
+import { speakKorean } from "@/utils/textToSpeech";
 
 interface Sentence {
   id: string;
@@ -730,6 +731,19 @@ const Sentences = () => {
                       )}
                     </div>
                     <div className="flex gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          // Strip HTML tags to get plain text for TTS
+                          const plainText = sentence.korean.replace(/<[^>]*>/g, '');
+                          speakKorean(plainText);
+                        }}
+                        className="h-8 w-8"
+                        title="Listen to pronunciation"
+                      >
+                        <Volume2 className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
