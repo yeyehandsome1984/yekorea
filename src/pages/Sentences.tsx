@@ -300,10 +300,13 @@ const Sentences = () => {
     return matchesSearch && matchesCategory && matchesTopik;
   });
 
-  const filteredVocabWords = availableWords.filter(word =>
-    word.word.toLowerCase().includes(vocabSearchQuery.toLowerCase()) ||
-    word.definition.toLowerCase().includes(vocabSearchQuery.toLowerCase())
-  );
+  // Only show vocab words if there's a search query, or if words are already linked
+  const filteredVocabWords = vocabSearchQuery.trim()
+    ? availableWords.filter(word =>
+        word.word.toLowerCase().includes(vocabSearchQuery.toLowerCase()) ||
+        word.definition.toLowerCase().includes(vocabSearchQuery.toLowerCase())
+      )
+    : availableWords.filter(word => newSentence.linkedVocabulary.includes(word.id));
 
   return (
     <div className="min-h-screen bg-background">
@@ -508,9 +511,13 @@ const Sentences = () => {
                     className="mb-2"
                   />
                   <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
-                    {filteredVocabWords.length === 0 ? (
+                    {filteredVocabWords.length === 0 && !vocabSearchQuery.trim() ? (
                       <p className="text-sm text-muted-foreground text-center py-2">
-                        No vocabulary words that appear in or are taught by this sentence
+                        Type to search for vocabulary words to link
+                      </p>
+                    ) : filteredVocabWords.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-2">
+                        No matching vocabulary words found
                       </p>
                     ) : (
                       filteredVocabWords.map(word => (
