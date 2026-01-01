@@ -383,6 +383,63 @@ const Sentences = () => {
                     onChange={(value) => setNewSentence({ ...newSentence, korean: value })}
                     placeholder="오늘 날씨가 정말 좋아요."
                   />
+                  
+                  {/* Highlighted preview with detected vocabulary */}
+                  {newSentence.korean.trim() && detectedWords.length > 0 && (
+                    <div className="bg-muted/50 rounded-md p-3 border">
+                      <p className="text-xs text-muted-foreground mb-2">Preview with detected vocabulary highlighted:</p>
+                      <p className="text-base leading-relaxed">
+                        {(() => {
+                          // Strip HTML tags for plain text processing
+                          const plainText = newSentence.korean.replace(/<[^>]*>/g, '');
+                          if (!plainText.trim()) return null;
+                          
+                          // Sort words by length (longest first) to prevent partial matches
+                          const sortedWords = [...detectedWords].sort((a, b) => b.word.length - a.word.length);
+                          
+                          // Create segments with highlights
+                          let segments: { text: string; isHighlight: boolean; wordDef?: string }[] = [{ text: plainText, isHighlight: false }];
+                          
+                          sortedWords.forEach(word => {
+                            const newSegments: typeof segments = [];
+                            segments.forEach(segment => {
+                              if (segment.isHighlight) {
+                                newSegments.push(segment);
+                                return;
+                              }
+                              
+                              const parts = segment.text.split(new RegExp(`(${word.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'g'));
+                              parts.forEach(part => {
+                                if (part === word.word) {
+                                  newSegments.push({ text: part, isHighlight: true, wordDef: word.definition });
+                                } else if (part) {
+                                  newSegments.push({ text: part, isHighlight: false });
+                                }
+                              });
+                            });
+                            segments = newSegments;
+                          });
+                          
+                          return segments.map((segment, idx) => 
+                            segment.isHighlight ? (
+                              <span 
+                                key={idx} 
+                                className="bg-primary/20 text-primary font-medium px-1 rounded border-b-2 border-primary cursor-help"
+                                title={segment.wordDef}
+                              >
+                                {segment.text}
+                              </span>
+                            ) : (
+                              <span key={idx}>{segment.text}</span>
+                            )
+                          );
+                        })()}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {detectedWords.length} word{detectedWords.length !== 1 ? 's' : ''} detected • Hover to see definitions
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* English Translation */}
