@@ -122,11 +122,16 @@ const ChapterDetail = () => {
       const cached = getStoredWordMeaning(koreanWord);
       const meaningData = cached || await fetchWordMeaningFromApi(koreanWord);
       
+      // Combine pronunciation with Hanja if available
+      const phoneticValue = meaningData.hanja && meaningData.hanja !== 'N/A'
+        ? `${meaningData.pronunciation} ${meaningData.hanja}`
+        : meaningData.pronunciation;
+      
       // Only populate empty fields
       setNewWord(prev => ({
         ...prev,
         definition: prev.definition || meaningData.englishMeaning,
-        phonetic: prev.phonetic || meaningData.pronunciation,
+        phonetic: prev.phonetic || phoneticValue,
         example: prev.example || meaningData.exampleKorean,
         notes: prev.notes || meaningData.exampleEnglish,
       }));
@@ -188,10 +193,15 @@ const ChapterDetail = () => {
           newDefinition = `${meaningData.koreanMeaning}\n\n${prev.definition}`;
         }
         
+        // Combine pronunciation with Hanja if available
+        const phoneticValue = meaningData.hanja && meaningData.hanja !== 'N/A'
+          ? `${meaningData.pronunciation} ${meaningData.hanja}`
+          : meaningData.pronunciation;
+        
         return {
           ...prev,
           definition: newDefinition,
-          phonetic: prev.phonetic || meaningData.pronunciation,
+          phonetic: prev.phonetic || phoneticValue,
           example: prev.example || meaningData.exampleKorean,
           notes: prev.notes || meaningData.exampleEnglish,
         };
@@ -279,10 +289,15 @@ const ChapterDetail = () => {
           newDefinition = `${meaningData.koreanMeaning}\n\n${word.definition}`;
         }
 
+        // Combine pronunciation with Hanja if available
+        const phoneticValue = meaningData.hanja && meaningData.hanja !== 'N/A'
+          ? `${meaningData.pronunciation} ${meaningData.hanja}`
+          : meaningData.pronunciation;
+
         // Update word with only missing fields
         await updateWord(word.id, {
           definition: newDefinition || word.definition,
-          phonetic: word.phonetic || meaningData.pronunciation,
+          phonetic: word.phonetic || phoneticValue,
           example: word.example || meaningData.exampleKorean,
           notes: word.notes || meaningData.exampleEnglish,
         });
