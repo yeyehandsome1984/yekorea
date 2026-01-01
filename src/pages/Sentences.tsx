@@ -32,6 +32,8 @@ import {
 } from "@/components/ui/card";
 import Navbar from "@/components/layout/Navbar";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { fetchAllWords } from "@/lib/database";
 
 interface Sentence {
   id: string;
@@ -96,38 +98,55 @@ const Sentences = () => {
     loadAvailableWords();
   }, []);
 
-  const loadSentences = () => {
-    const stored = localStorage.getItem('korean-sentences');
-    if (stored) {
-      setSentences(JSON.parse(stored));
+  const loadSentences = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sentences')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const mappedSentences: Sentence[] = (data || []).map(s => ({
+        id: s.id,
+        korean: s.korean,
+        english: s.english,
+        chinese: s.chinese || '',
+        grammarPoints: s.grammar_points || '',
+        topic: s.topic || '',
+        topikLevel: s.topik_level || '',
+        category: s.category,
+        difficulty: s.difficulty,
+        notes: s.notes || '',
+        tags: (s.tags as string[]) || [],
+        linkedVocabulary: (s.linked_vocabulary as string[]) || [],
+        createdAt: s.created_at
+      }));
+
+      setSentences(mappedSentences);
+    } catch (error) {
+      console.error('Error loading sentences:', error);
+      toast.error('Failed to load sentences');
     }
   };
 
-  const loadAvailableWords = () => {
-    const chapters = JSON.parse(localStorage.getItem('chapters') || '{}');
-    const words: Word[] = [];
-    
-    Object.entries(chapters).forEach(([chapterId, chapter]: [string, any]) => {
-      chapter.vocabulary.forEach((word: any) => {
-        words.push({
-          id: word.id,
-          word: word.word,
-          definition: word.definition,
-          chapterId: chapterId,
-          chapterTitle: chapter.title
-        });
-      });
-    });
-    
-    setAvailableWords(words);
+  const loadAvailableWords = async () => {
+    try {
+      const words = await fetchAllWords();
+      const mappedWords: Word[] = words.map(w => ({
+        id: w.id,
+        word: w.word,
+        definition: w.definition,
+        chapterId: w.chapter_id,
+        chapterTitle: ''
+      }));
+      setAvailableWords(mappedWords);
+    } catch (error) {
+      console.error('Error loading words:', error);
+    }
   };
 
-  const saveSentences = (updatedSentences: Sentence[]) => {
-    localStorage.setItem('korean-sentences', JSON.stringify(updatedSentences));
-    setSentences(updatedSentences);
-  };
-
-  const handleAddSentence = () => {
+  const handleAddSentence = async () => {
     if (!newSentence.korean || !newSentence.english) {
       toast.error("Korean sentence and English translation are required");
       return;
@@ -138,23 +157,56 @@ const Sentences = () => {
       return;
     }
 
-    if (editingSentence) {
-      // Update existing sentence
-      const updatedSentences = sentences.map(s =>
-        s.id === editingSentence.id ? { ...newSentence, id: s.id, createdAt: s.createdAt } : s
-      );
-      saveSentences(updatedSentences);
-      toast.success("Sentence updated successfully!");
-    } else {
-      // Add new sentence
-      const sentence: Sentence = {
-        ...newSentence,
-        id: crypto.randomUUID(),
-        createdAt: new Date().toISOString()
-      };
-      const updatedSentences = [...sentences, sentence];
-      saveSentences(updatedSentences);
-      toast.success("Sentence added successfully!");
+    try {
+      if (editingSentence) {
+        // Update existing sentence
+        const { error } = await supabase
+          .from('sentences')
+          .update({
+            korean: newSentence.korean,
+            english: newSentence.english,
+            chinese: newSentence.chinese || null,
+            grammar_points: newSentence.grammarPoints || null,
+            topic: newSentence.topic || null,
+            topik_level: newSentence.topikLevel || null,
+            category: newSentence.category,
+            difficulty: newSentence.difficulty,
+            notes: newSentence.notes || null,
+            tags: newSentence.tags,
+            linked_vocabulary: newSentence.linkedVocabulary
+          })
+          .eq('id', editingSentence.id);
+
+        if (error) throw error;
+        toast.success("Sentence updated successfully!");
+      } else {
+        // Add new sentence
+        const { error } = await supabase
+          .from('sentences')
+          .insert({
+            korean: newSentence.korean,
+            english: newSentence.english,
+            chinese: newSentence.chinese || null,
+            grammar_points: newSentence.grammarPoints || null,
+            topic: newSentence.topic || null,
+            topik_level: newSentence.topikLevel || null,
+            category: newSentence.category,
+            difficulty: newSentence.difficulty,
+            notes: newSentence.notes || null,
+            tags: newSentence.tags,
+            linked_vocabulary: newSentence.linkedVocabulary
+          });
+
+        if (error) throw error;
+        toast.success("Sentence added successfully!");
+      }
+
+      // Reload sentences
+      await loadSentences();
+    } catch (error) {
+      console.error('Error saving sentence:', error);
+      toast.error('Failed to save sentence');
+      return;
     }
     
     setNewSentence({
@@ -193,10 +245,21 @@ const Sentences = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDeleteSentence = (id: string) => {
-    const updatedSentences = sentences.filter(s => s.id !== id);
-    saveSentences(updatedSentences);
-    toast.success("Sentence deleted");
+  const handleDeleteSentence = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('sentences')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setSentences(sentences.filter(s => s.id !== id));
+      toast.success("Sentence deleted");
+    } catch (error) {
+      console.error('Error deleting sentence:', error);
+      toast.error('Failed to delete sentence');
+    }
   };
 
   const handleAddTag = () => {
