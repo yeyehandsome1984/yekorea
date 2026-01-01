@@ -935,8 +935,8 @@ const ChapterDetail = () => {
     const wordsForPDF = words.map(word => ({
       id: word.id,
       word: word.word,
-      translation: word.definition,
-      phonetic: word.phonetic,
+      translation: word.definition || '',
+      phonetic: word.phonetic || '',
       chapter: chapter.title
     }));
 
