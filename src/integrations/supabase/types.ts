@@ -68,6 +68,57 @@ export type Database = {
         }
         Relationships: []
       }
+      sentences: {
+        Row: {
+          category: string
+          chinese: string | null
+          created_at: string
+          difficulty: number
+          english: string
+          grammar_points: string | null
+          id: string
+          korean: string
+          linked_vocabulary: Json | null
+          notes: string | null
+          tags: Json | null
+          topic: string | null
+          topik_level: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          chinese?: string | null
+          created_at?: string
+          difficulty?: number
+          english: string
+          grammar_points?: string | null
+          id?: string
+          korean: string
+          linked_vocabulary?: Json | null
+          notes?: string | null
+          tags?: Json | null
+          topic?: string | null
+          topik_level?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          chinese?: string | null
+          created_at?: string
+          difficulty?: number
+          english?: string
+          grammar_points?: string | null
+          id?: string
+          korean?: string
+          linked_vocabulary?: Json | null
+          notes?: string | null
+          tags?: Json | null
+          topic?: string | null
+          topik_level?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       study_sessions: {
         Row: {
           created_at: string
