@@ -132,13 +132,19 @@ const Sentences = () => {
 
   const loadAvailableWords = async () => {
     try {
-      const words = await fetchAllWords();
-      const mappedWords: Word[] = words.map(w => ({
+      // Fetch words with their chapter information
+      const { data: wordsData, error: wordsError } = await supabase
+        .from('words')
+        .select('id, word, definition, chapter_id, chapters(title)');
+      
+      if (wordsError) throw wordsError;
+      
+      const mappedWords: Word[] = (wordsData || []).map((w: any) => ({
         id: w.id,
         word: w.word,
         definition: w.definition,
         chapterId: w.chapter_id,
-        chapterTitle: ''
+        chapterTitle: w.chapters?.title || ''
       }));
       setAvailableWords(mappedWords);
     } catch (error) {
@@ -399,7 +405,7 @@ const Sentences = () => {
                           const sortedWords = [...detectedWords].sort((a, b) => b.word.length - a.word.length);
                           
                           // Create segments with highlights
-                          let segments: { text: string; isHighlight: boolean; wordDef?: string }[] = [{ text: plainText, isHighlight: false }];
+                          let segments: { text: string; isHighlight: boolean; wordDef?: string; chapterTitle?: string }[] = [{ text: plainText, isHighlight: false }];
                           
                           sortedWords.forEach(word => {
                             const newSegments: typeof segments = [];
@@ -412,7 +418,7 @@ const Sentences = () => {
                               const parts = segment.text.split(new RegExp(`(${word.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'g'));
                               parts.forEach(part => {
                                 if (part === word.word) {
-                                  newSegments.push({ text: part, isHighlight: true, wordDef: word.definition });
+                                  newSegments.push({ text: part, isHighlight: true, wordDef: word.definition, chapterTitle: word.chapterTitle });
                                 } else if (part) {
                                   newSegments.push({ text: part, isHighlight: false });
                                 }
@@ -426,7 +432,7 @@ const Sentences = () => {
                               <span 
                                 key={idx} 
                                 className="bg-primary/20 text-primary font-medium px-1 rounded border-b-2 border-primary cursor-help"
-                                title={segment.wordDef}
+                                title={`${segment.wordDef}${segment.chapterTitle ? ` (${segment.chapterTitle})` : ''}`}
                               >
                                 {segment.text}
                               </span>
