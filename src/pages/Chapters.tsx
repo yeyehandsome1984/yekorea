@@ -232,6 +232,7 @@ const Chapters = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [chapterToDelete, setChapterToDelete] = useState<string | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [chapterToRename, setChapterToRename] = useState<string | null>(null);
   const [newChapterTitle, setNewChapterTitle] = useState('');
   const [renameChapterTitle, setRenameChapterTitle] = useState('');
@@ -418,6 +419,7 @@ const Chapters = () => {
   const openDeleteDialog = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setChapterToDelete(id);
+    setDeleteConfirmText('');
     setShowDeleteDialog(true);
   };
   const handleDeleteChapter = async () => {
@@ -433,6 +435,7 @@ const Chapters = () => {
       
       setShowDeleteDialog(false);
       setChapterToDelete(null);
+      setDeleteConfirmText('');
       
       toast({
         title: "Chapter deleted",
@@ -939,18 +942,42 @@ const Chapters = () => {
           </AlertDialogContent>
         </AlertDialog>
 
-        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialog open={showDeleteDialog} onOpenChange={(open) => {
+          setShowDeleteDialog(open);
+          if (!open) {
+            setChapterToDelete(null);
+            setDeleteConfirmText('');
+          }
+        }}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Chapter</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete this chapter? This action cannot be undone and all words in this chapter will be lost.
+              <AlertDialogTitle className="text-destructive">⚠️ Delete Chapter</AlertDialogTitle>
+              <AlertDialogDescription className="space-y-3">
+                <span className="block">
+                  This action <strong>cannot be undone</strong>. All words in this chapter will be permanently deleted.
+                </span>
+                <span className="block font-medium text-foreground">
+                  To confirm, type the chapter name: <span className="font-bold text-destructive">"{chapters.find(c => c.id === chapterToDelete)?.title}"</span>
+                </span>
               </AlertDialogDescription>
             </AlertDialogHeader>
+            <Input
+              placeholder="Type chapter name to confirm"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              className="mt-2"
+            />
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setChapterToDelete(null)}>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteChapter} className="bg-red-500 hover:bg-red-600">
-                Delete
+              <AlertDialogCancel onClick={() => {
+                setChapterToDelete(null);
+                setDeleteConfirmText('');
+              }}>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDeleteChapter} 
+                className="bg-destructive hover:bg-destructive/90"
+                disabled={deleteConfirmText !== chapters.find(c => c.id === chapterToDelete)?.title}
+              >
+                Delete Permanently
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
