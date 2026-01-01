@@ -1660,22 +1660,6 @@ const ChapterDetail = () => {
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="edit-topik">TOPIK Level</Label>
-                <Select 
-                  value={editingWord.topikLevel || 'none'} 
-                  onValueChange={(value) => setEditingWord({ ...editingWord, topikLevel: value === 'none' ? '' : value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select TOPIK level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No TOPIK</SelectItem>
-                    <SelectItem value="TOPIK-1">TOPIK-1</SelectItem>
-                    <SelectItem value="TOPIK-2">TOPIK-2</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
 
               <div className="space-y-2">
                 <Label>Also copy to chapters (optional):</Label>
@@ -1839,22 +1823,6 @@ const ChapterDetail = () => {
               </div>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="new-topik">TOPIK Level</Label>
-              <Select 
-                value={newWord.topikLevel || 'none'} 
-                onValueChange={(value) => setNewWord({ ...newWord, topikLevel: value === 'none' ? '' : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select TOPIK level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No TOPIK</SelectItem>
-                  <SelectItem value="TOPIK-1">TOPIK-1</SelectItem>
-                  <SelectItem value="TOPIK-2">TOPIK-2</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             
             <div className="space-y-2">
               <Label htmlFor="new-tags">Tags</Label>
