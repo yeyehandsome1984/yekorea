@@ -147,8 +147,8 @@ const Sentences = () => {
   };
 
   const handleAddSentence = async () => {
-    if (!newSentence.korean || !newSentence.english) {
-      toast.error("Korean sentence and English translation are required");
+    if (!newSentence.korean.replace(/<[^>]*>/g, '').trim()) {
+      toast.error("Korean sentence is required");
       return;
     }
 
@@ -300,11 +300,12 @@ const Sentences = () => {
     return matchesSearch && matchesCategory && matchesTopik;
   });
 
-  // Auto-detect vocabulary words that appear in the Korean sentence
+  // Auto-detect vocabulary words that appear in the Korean sentence (strip HTML for proper matching)
+  const koreanPlainText = newSentence.korean.replace(/<[^>]*>/g, '').trim();
   const detectedWords = availableWords.filter(word => {
-    if (!newSentence.korean.trim()) return false;
-    // Check if the word appears in the Korean sentence (case-insensitive for mixed content)
-    return newSentence.korean.includes(word.word);
+    if (!koreanPlainText) return false;
+    // Check if the word appears in the Korean sentence
+    return koreanPlainText.includes(word.word);
   });
 
   // Get words that are detected but not yet linked
