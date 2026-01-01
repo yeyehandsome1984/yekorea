@@ -165,9 +165,9 @@ const Bookmarks = () => {
     }
   };
 
-  const handleGeneratePDF = () => {
+  const handleGeneratePDF = async () => {
     const wordsToExport = selectedTab === 'all' ? bookmarkedWords : filteredWords;
-    
+
     if (wordsToExport.length === 0) {
       toast({
         title: "No bookmarks",
@@ -179,7 +179,7 @@ const Bookmarks = () => {
 
     try {
       const fileName = selectedTab === 'all' ? 'all-bookmarked-vocabulary' : `${selectedTab}-vocabulary`;
-      generatePDF(wordsToExport, fileName);
+      await generatePDF(wordsToExport, fileName);
       toast({
         title: "PDF Downloaded",
         description: `Downloaded ${wordsToExport.length} words from ${selectedTab === 'all' ? 'All Bookmarks' : selectedTab} as PDF.`

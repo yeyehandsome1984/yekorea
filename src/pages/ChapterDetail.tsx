@@ -922,7 +922,7 @@ const ChapterDetail = () => {
     setMode('table');
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!chapter || !words || words.length === 0) {
       toast({
         title: "No words available",
@@ -941,7 +941,7 @@ const ChapterDetail = () => {
     }));
 
     try {
-      generatePDF(wordsForPDF, `${chapter.title}-vocabulary`);
+      await generatePDF(wordsForPDF, `${chapter.title}-vocabulary`);
       toast({
         title: "PDF downloaded",
         description: "Your vocabulary PDF has been downloaded successfully."
