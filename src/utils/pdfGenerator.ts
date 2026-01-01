@@ -9,7 +9,7 @@ interface BookmarkedWord {
   chapter: string;
 }
 
-export const generatePDF = (data: BookmarkedWord[], fileName: string = 'blackbook-vocabulary') => {
+export const generatePDF = (data: BookmarkedWord[], fileName: string = 'vocabulary') => {
   // Create a new PDF document in A4 format
   const doc = new jsPDF();
   
@@ -19,99 +19,96 @@ export const generatePDF = (data: BookmarkedWord[], fileName: string = 'blackboo
   
   // Header styling
   doc.setFillColor(30, 41, 59); // Dark slate gray (#1e293b)
-  doc.rect(0, 0, pageWidth, 40, 'F');
+  doc.rect(0, 0, pageWidth, 35, 'F');
   
-  // Title
-  doc.setTextColor(255, 255, 255); // White text
-  doc.setFontSize(16);
+  // Title - Use simple ASCII for header since Korean fonts not embedded
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.text("Blackbook English Vocabulary", pageWidth / 2, 25, { align: 'center' });
+  doc.text("Korean Vocabulary List", pageWidth / 2, 22, { align: 'center' });
   
-  // Prepare table data
+  // Chapter subtitle
+  if (data.length > 0 && data[0].chapter) {
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(data[0].chapter, pageWidth / 2, 30, { align: 'center' });
+  }
+  
+  // Prepare table data - Korean text will be rendered as Unicode
   const tableData = data.map((row, index) => [
-    (index + 1).toString(), // SN
-    `Definition or usage of ${row.word}`, // Phrases (placeholder - you can modify this)
-    `${row.word} (#${Math.floor(Math.random() * 10) + 1})`, // One Word (#R) - random repeat count
-    getPartOfSpeech(row.word), // PoS (placeholder function)
-    row.translation // Hindi
+    (index + 1).toString(),
+    row.word || '',
+    row.phonetic || '',
+    row.translation || ''
   ]);
   
-  // Generate table
+  // Generate table with proper column structure
   autoTable(doc, {
-    head: [['SN', 'Phrases', 'One Word (#R)', 'PoS', 'Hindi']],
+    head: [['#', 'Korean Word', 'Pronunciation', 'Definition']],
     body: tableData,
-    startY: 45,
+    startY: 42,
     margin: { left: 15, right: 15 },
     styles: {
-      fontSize: 9,
-      cellPadding: 8,
+      fontSize: 10,
+      cellPadding: 6,
       font: "helvetica",
-      textColor: [51, 65, 85], // Slate gray text
-      lineColor: [226, 232, 240], // Light gray borders
+      textColor: [51, 65, 85],
+      lineColor: [226, 232, 240],
       lineWidth: 0.5,
-      minCellHeight: 12
+      minCellHeight: 10,
+      overflow: 'linebreak'
     },
     headStyles: {
-      fillColor: [248, 250, 252], // Light gray background (#f8fafc)
-      textColor: [51, 65, 85], // Dark text (#334155)
+      fillColor: [248, 250, 252],
+      textColor: [51, 65, 85],
       fontStyle: 'bold',
-      fontSize: 10,
-      cellPadding: 10,
+      fontSize: 11,
+      cellPadding: 8,
       lineColor: [226, 232, 240],
       lineWidth: 0.8
     },
     columnStyles: {
-      0: { cellWidth: 20, halign: 'center' }, // SN
-      1: { cellWidth: 85 }, // Phrases
-      2: { cellWidth: 40, halign: 'center' }, // One Word
-      3: { cellWidth: 25, halign: 'center' }, // PoS
-      4: { cellWidth: 35 } // Hindi
+      0: { cellWidth: 15, halign: 'center' },
+      1: { cellWidth: 50, halign: 'left' },
+      2: { cellWidth: 45, halign: 'left' },
+      3: { cellWidth: 'auto', halign: 'left' }
     },
     alternateRowStyles: {
-      fillColor: [253, 253, 254] // Very light gray for odd rows (#fdfdfe)
+      fillColor: [253, 253, 254]
     },
     tableLineColor: [226, 232, 240],
     tableLineWidth: 0.5,
     theme: 'grid',
-    didParseCell: function(data) {
-      // Add hover effect simulation with slightly different colors
-      if (data.row.index % 4 === 0) {
-        data.cell.styles.fillColor = [240, 249, 255]; // Light blue tint
+    // Handle Korean text encoding
+    didDrawCell: function(data) {
+      // Add subtle left border accent for data rows
+      if (data.section === 'body' && data.column.index === 0) {
+        doc.setFillColor(99, 102, 241); // Indigo accent
+        doc.rect(data.cell.x, data.cell.y, 2, data.cell.height, 'F');
       }
     }
   });
   
-  // Add page numbers
+  // Add footer with page numbers and word count
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    doc.setFontSize(8);
+    doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
     doc.text(
       `Page ${i} of ${totalPages}`,
-      pageWidth - 30,
-      pageHeight - 15,
+      pageWidth - 25,
+      pageHeight - 12,
       { align: 'right' }
+    );
+    doc.text(
+      `Total: ${data.length} words`,
+      25,
+      pageHeight - 12,
+      { align: 'left' }
     );
   }
   
   // Save the PDF
   doc.save(`${fileName}.pdf`);
 };
-
-// Helper function to determine part of speech (placeholder implementation)
-function getPartOfSpeech(word: string): string {
-  // This is a simple placeholder - you can enhance this with actual POS detection
-  const commonNouns = ['man', 'woman', 'house', 'book', 'water', 'dog', 'cat'];
-  const commonVerbs = ['run', 'walk', 'eat', 'sleep', 'read', 'write', 'think'];
-  const commonAdjectives = ['good', 'bad', 'big', 'small', 'happy', 'sad', 'beautiful'];
-  
-  const lowerWord = word.toLowerCase();
-  
-  if (commonNouns.includes(lowerWord)) return '(N.)';
-  if (commonVerbs.includes(lowerWord)) return '(V.)';
-  if (commonAdjectives.includes(lowerWord)) return '(Adj.)';
-  
-  // Default fallback
-  return '(N.)';
-}
