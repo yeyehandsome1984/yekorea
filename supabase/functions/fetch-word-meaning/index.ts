@@ -33,9 +33,9 @@ English Meaning: [Provide a concise English definition in 1-2 lines]
 
 Korean Meaning: [Provide a Korean language definition/explanation in 1-2 lines]
 
-Pronunciation: [Write the word in Korean Hangul in brackets, e.g., "[명칭]". Only Hangul, no romanization, no extra notes or explanations.]
+Pronunciation: [Write the ACTUAL KOREAN PRONUNCIATION (실제 발음) with sound changes (음운 변화) applied, in brackets. Apply all Korean phonological rules including: 연음법칙 (liaison), 비음화 (nasalization), 경음화 (tensification), 격음화 (aspiration), 구개음화 (palatalization), etc. Examples: 폭력→[퐁녁], 국물→[궁물], 학교→[학꾜], 십리→[심니], 닫히다→[다치다]. Only Hangul in brackets, no romanization, no explanations.]
 
-Hanja: [If corresponding Chinese characters (Hanja) exist, provide ONLY the characters (e.g., "名稱"). If no Hanja exists, write exactly "N/A". Do NOT add any notes, explanations, or parenthetical remarks.]
+Hanja: [If corresponding Chinese characters (Hanja) exist, provide ONLY the characters (e.g., "暴力"). If no Hanja exists, write exactly "N/A". Do NOT add any notes, explanations, or parenthetical remarks.]
 
 Example Korean: [Provide one example sentence in Korean using this word]
 
