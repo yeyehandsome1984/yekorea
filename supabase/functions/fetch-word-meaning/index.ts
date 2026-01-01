@@ -33,15 +33,15 @@ English Meaning: [Provide a concise English definition in 1-2 lines]
 
 Korean Meaning: [Provide a Korean language definition/explanation in 1-2 lines]
 
-Pronunciation: [Provide the word written in Korean Hangul showing how it's pronounced. For example, if the word is "명칭", write "[명칭]". Do NOT use romanization like "Myeong-ching" - only use Korean Hangul characters.]
+Pronunciation: [Write the word in Korean Hangul in brackets, e.g., "[명칭]". Only Hangul, no romanization, no extra notes or explanations.]
 
-Hanja: [If the Korean word has corresponding Chinese characters (Hanja/漢字), provide them (e.g., 名稱). If no Hanja exists for this word, write "N/A"]
+Hanja: [If corresponding Chinese characters (Hanja) exist, provide ONLY the characters (e.g., "名稱"). If no Hanja exists, write exactly "N/A". Do NOT add any notes, explanations, or parenthetical remarks.]
 
 Example Korean: [Provide one example sentence in Korean using this word]
 
 Example English: [Provide English translation of the example sentence]
 
-Keep all responses brief and concise.`;
+IMPORTANT: Keep responses minimal. No extra notes, explanations, or commentary in any field.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
