@@ -35,6 +35,8 @@ Korean Meaning: [Provide a Korean language definition/explanation in 1-2 lines]
 
 Pronunciation: [Provide Korean hangul pronunciation guide]
 
+Hanja: [If the Korean word has corresponding Chinese characters (Hanja/漢字), provide them. If no Hanja exists for this word, write "N/A"]
+
 Example Korean: [Provide one example sentence in Korean using this word]
 
 Example English: [Provide English translation of the example sentence]
@@ -92,6 +94,9 @@ Keep all responses brief and concise.`;
     const pronunciationMatch = responseText.match(/Pronunciation:\s*(.*?)(?=\n|$)/);
     const pronunciation = pronunciationMatch?.[1]?.trim() || '';
     
+    const hanjaMatch = responseText.match(/Hanja:\s*(.*?)(?=\n|$)/);
+    const hanja = hanjaMatch?.[1]?.trim() || '';
+    
     const exampleKoreanMatch = responseText.match(/Example Korean:\s*(.*?)(?=\n|$)/);
     const exampleKorean = exampleKoreanMatch?.[1]?.trim() || '';
     
@@ -102,6 +107,7 @@ Keep all responses brief and concise.`;
       englishMeaning,
       koreanMeaning,
       pronunciation,
+      hanja,
       exampleKorean,
       exampleEnglish
     };

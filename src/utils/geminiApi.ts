@@ -1,8 +1,9 @@
 
-interface WordMeaningData {
+export interface WordMeaningData {
   englishMeaning: string;
   koreanMeaning: string;
   pronunciation: string;
+  hanja?: string;
   exampleKorean: string;
   exampleEnglish: string;
 }
