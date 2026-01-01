@@ -66,6 +66,7 @@ interface WordMeaning {
   englishMeaning: string;
   koreanMeaning: string;
   pronunciation: string;
+  hanja: string;
   exampleKorean: string;
   exampleEnglish: string;
   loading: boolean;
@@ -84,6 +85,7 @@ const WordMeaningDialog = ({ word, open, onOpenChange }: WordMeaningDialogProps)
     englishMeaning: '',
     koreanMeaning: '',
     pronunciation: '',
+    hanja: '',
     exampleKorean: '',
     exampleEnglish: '',
     loading: false,
@@ -100,6 +102,7 @@ const WordMeaningDialog = ({ word, open, onOpenChange }: WordMeaningDialogProps)
         englishMeaning: '',
         koreanMeaning: '',
         pronunciation: '',
+        hanja: '',
         exampleKorean: '',
         exampleEnglish: '',
         loading: false,
@@ -112,6 +115,7 @@ const WordMeaningDialog = ({ word, open, onOpenChange }: WordMeaningDialogProps)
         if (isValidWordMeaningData(cachedMeaning)) {
           setWordMeaning({
             ...cachedMeaning,
+            hanja: cachedMeaning.hanja || '',
             loading: false,
             error: null
           });
@@ -180,6 +184,7 @@ const WordMeaningDialog = ({ word, open, onOpenChange }: WordMeaningDialogProps)
 
         setWordMeaning({
           ...meaningData,
+          hanja: meaningData.hanja || '',
           loading: false,
           error: null
         });
@@ -299,7 +304,12 @@ const WordMeaningDialog = ({ word, open, onOpenChange }: WordMeaningDialogProps)
                 {wordMeaning.pronunciation && (
                   <div>
                     <h4 className="text-md font-semibold text-gray-700">Pronunciation:</h4>
-                    <p className="text-sm">{wordMeaning.pronunciation}</p>
+                    <p className="text-sm">
+                      {wordMeaning.pronunciation}
+                      {wordMeaning.hanja && wordMeaning.hanja !== 'N/A' && (
+                        <span className="ml-2 text-amber-600 font-medium">{wordMeaning.hanja}</span>
+                      )}
+                    </p>
                   </div>
                 )}
 

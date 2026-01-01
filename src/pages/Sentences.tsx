@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
   Select,
   SelectContent,
@@ -56,7 +57,7 @@ interface Word {
   chapterTitle: string;
 }
 
-const CATEGORIES = ["Grammar", "Daily Life", "Travel", "Business", "Culture", "Other"];
+const CATEGORIES = ["Listening", "Essay", "Grammar", "Others"];
 
 const COMMON_TAGS = [
   "adjective", "advanced", "antonym", "beginner", "casual", "common",
@@ -129,6 +130,11 @@ const Sentences = () => {
   const handleAddSentence = () => {
     if (!newSentence.korean || !newSentence.english) {
       toast.error("Korean sentence and English translation are required");
+      return;
+    }
+
+    if (!newSentence.category) {
+      toast.error("Category is required");
       return;
     }
 
@@ -291,36 +297,30 @@ const Sentences = () => {
                 {/* Korean Sentence */}
                 <div className="space-y-2">
                   <Label htmlFor="korean">Korean Sentence *</Label>
-                  <Textarea
-                    id="korean"
+                  <RichTextEditor
                     value={newSentence.korean}
-                    onChange={(e) => setNewSentence({ ...newSentence, korean: e.target.value })}
+                    onChange={(value) => setNewSentence({ ...newSentence, korean: value })}
                     placeholder="오늘 날씨가 정말 좋아요."
-                    rows={2}
                   />
                 </div>
 
                 {/* English Translation */}
                 <div className="space-y-2">
                   <Label htmlFor="english">English Translation *</Label>
-                  <Textarea
-                    id="english"
+                  <RichTextEditor
                     value={newSentence.english}
-                    onChange={(e) => setNewSentence({ ...newSentence, english: e.target.value })}
+                    onChange={(value) => setNewSentence({ ...newSentence, english: value })}
                     placeholder="The weather is really nice today."
-                    rows={2}
                   />
                 </div>
 
                 {/* Chinese Translation */}
                 <div className="space-y-2">
                   <Label htmlFor="chinese">Chinese Translation (中文翻译)</Label>
-                  <Textarea
-                    id="chinese"
+                  <RichTextEditor
                     value={newSentence.chinese}
-                    onChange={(e) => setNewSentence({ ...newSentence, chinese: e.target.value })}
+                    onChange={(value) => setNewSentence({ ...newSentence, chinese: value })}
                     placeholder="今天天气真好。"
-                    rows={2}
                   />
                 </div>
 
@@ -367,16 +367,15 @@ const Sentences = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="category">Category</Label>
+                    <Label htmlFor="category">Category *</Label>
                     <Select 
-                      value={newSentence.category || 'none'} 
-                      onValueChange={(value) => setNewSentence({ ...newSentence, category: value === 'none' ? '' : value })}
+                      value={newSentence.category || ''} 
+                      onValueChange={(value) => setNewSentence({ ...newSentence, category: value })}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select..." />
+                      <SelectTrigger className={!newSentence.category ? 'border-destructive' : ''}>
+                        <SelectValue placeholder="Select category..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">No Category</SelectItem>
                         {CATEGORIES.map(cat => (
                           <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                         ))}
@@ -564,13 +563,15 @@ const Sentences = () => {
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex-1 space-y-1">
                       <CardTitle className="text-sm leading-relaxed line-clamp-2">
-                        {sentence.korean}
+                        <span dangerouslySetInnerHTML={{ __html: sentence.korean }} />
                       </CardTitle>
                       <CardDescription className="text-xs line-clamp-2">
-                        {sentence.english}
+                        <span dangerouslySetInnerHTML={{ __html: sentence.english }} />
                       </CardDescription>
                       {sentence.chinese && (
-                        <p className="text-xs text-muted-foreground line-clamp-1">{sentence.chinese}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                          <span dangerouslySetInnerHTML={{ __html: sentence.chinese }} />
+                        </p>
                       )}
                     </div>
                     <div className="flex gap-1 shrink-0">
