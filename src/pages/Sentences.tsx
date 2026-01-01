@@ -300,13 +300,28 @@ const Sentences = () => {
     return matchesSearch && matchesCategory && matchesTopik;
   });
 
-  // Only show vocab words if there's a search query, or if words are already linked
+  // Auto-detect vocabulary words that appear in the Korean sentence
+  const detectedWords = availableWords.filter(word => {
+    if (!newSentence.korean.trim()) return false;
+    // Check if the word appears in the Korean sentence (case-insensitive for mixed content)
+    return newSentence.korean.includes(word.word);
+  });
+
+  // Get words that are detected but not yet linked
+  const suggestedWords = detectedWords.filter(word => !newSentence.linkedVocabulary.includes(word.id));
+
+  // Filter vocab words based on search query, or show detected/linked words
   const filteredVocabWords = vocabSearchQuery.trim()
     ? availableWords.filter(word =>
         word.word.toLowerCase().includes(vocabSearchQuery.toLowerCase()) ||
         word.definition.toLowerCase().includes(vocabSearchQuery.toLowerCase())
       )
-    : availableWords.filter(word => newSentence.linkedVocabulary.includes(word.id));
+    : [
+        // Show already linked words first
+        ...availableWords.filter(word => newSentence.linkedVocabulary.includes(word.id)),
+        // Then show suggested (detected but not linked) words
+        ...suggestedWords
+      ].filter((word, index, self) => self.findIndex(w => w.id === word.id) === index);
 
   return (
     <div className="min-h-screen bg-background">
@@ -504,6 +519,29 @@ const Sentences = () => {
                 {/* Vocabulary Words Learned */}
                 <div className="space-y-2">
                   <Label>Vocabulary Words Learned from this Sentence</Label>
+                  
+                  {/* Auto-detected suggestions */}
+                  {suggestedWords.length > 0 && !vocabSearchQuery.trim() && (
+                    <div className="bg-accent/50 rounded-md p-3 mb-2">
+                      <p className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                        <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                        Auto-detected words from your sentence:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {suggestedWords.map(word => (
+                          <Badge
+                            key={word.id}
+                            variant="outline"
+                            className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                            onClick={() => handleToggleVocabulary(word.id)}
+                          >
+                            + {word.word}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
                   <Input
                     value={vocabSearchQuery}
                     onChange={(e) => setVocabSearchQuery(e.target.value)}
@@ -511,34 +549,46 @@ const Sentences = () => {
                     className="mb-2"
                   />
                   <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
-                    {filteredVocabWords.length === 0 && !vocabSearchQuery.trim() ? (
+                    {filteredVocabWords.length === 0 && !vocabSearchQuery.trim() && suggestedWords.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-2">
-                        Type to search for vocabulary words to link
+                        Type a Korean sentence above to auto-detect vocabulary, or search to add words
                       </p>
                     ) : filteredVocabWords.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-2">
                         No matching vocabulary words found
                       </p>
                     ) : (
-                      filteredVocabWords.map(word => (
-                        <div
-                          key={word.id}
-                          className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
-                            newSentence.linkedVocabulary.includes(word.id)
-                              ? 'bg-primary/10 border border-primary'
-                              : 'hover:bg-accent'
-                          }`}
-                          onClick={() => handleToggleVocabulary(word.id)}
-                        >
-                          <div>
-                            <span className="font-medium">{word.word}</span>
-                            <span className="text-sm text-muted-foreground ml-2">- {word.definition}</span>
+                      filteredVocabWords.map(word => {
+                        const isLinked = newSentence.linkedVocabulary.includes(word.id);
+                        const isSuggested = suggestedWords.some(sw => sw.id === word.id);
+                        
+                        return (
+                          <div
+                            key={word.id}
+                            className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
+                              isLinked
+                                ? 'bg-primary/10 border border-primary'
+                                : isSuggested
+                                ? 'bg-green-500/10 border border-green-500/30 hover:bg-green-500/20'
+                                : 'hover:bg-accent'
+                            }`}
+                            onClick={() => handleToggleVocabulary(word.id)}
+                          >
+                            <div>
+                              <span className="font-medium">{word.word}</span>
+                              <span className="text-sm text-muted-foreground ml-2">- {word.definition}</span>
+                            </div>
+                            <div className="flex gap-1">
+                              {isSuggested && !isLinked && (
+                                <Badge variant="outline" className="text-xs border-green-500 text-green-600">Detected</Badge>
+                              )}
+                              {isLinked && (
+                                <Badge variant="default" className="text-xs">Linked</Badge>
+                              )}
+                            </div>
                           </div>
-                          {newSentence.linkedVocabulary.includes(word.id) && (
-                            <Badge variant="default" className="text-xs">Linked</Badge>
-                          )}
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>
