@@ -114,7 +114,7 @@ const ChapterDetail = () => {
 
   
   // Auto-fetch word data from Lovable AI
-  const autoFetchWordData = useCallback(async (koreanWord: string) => {
+  const autoFetchWordData = useCallback(async (koreanWord: string, forceRefresh: boolean = false) => {
     if (!koreanWord.trim() || koreanWord.length < 2) return;
 
     setIsAutoFetching(true);
@@ -127,15 +127,26 @@ const ChapterDetail = () => {
         ? `${meaningData.pronunciation} ${meaningData.hanja}`
         : meaningData.pronunciation;
       
-      // Only populate empty fields
-      setNewWord(prev => ({
-        ...prev,
-        definition: prev.definition || meaningData.englishMeaning,
-        phonetic: prev.phonetic || phoneticValue,
-        example: prev.example || meaningData.exampleKorean,
-        notes: prev.notes || meaningData.exampleEnglish,
-      }));
-      setKoreanDefinition(prev => prev || meaningData.koreanMeaning);
+      // If forceRefresh, replace all fields; otherwise only populate empty fields
+      if (forceRefresh) {
+        setNewWord(prev => ({
+          ...prev,
+          definition: meaningData.englishMeaning,
+          phonetic: phoneticValue,
+          example: meaningData.exampleKorean,
+          notes: meaningData.exampleEnglish,
+        }));
+        setKoreanDefinition(meaningData.koreanMeaning);
+      } else {
+        setNewWord(prev => ({
+          ...prev,
+          definition: prev.definition || meaningData.englishMeaning,
+          phonetic: prev.phonetic || phoneticValue,
+          example: prev.example || meaningData.exampleKorean,
+          notes: prev.notes || meaningData.exampleEnglish,
+        }));
+        setKoreanDefinition(prev => prev || meaningData.koreanMeaning);
+      }
     } catch (error) {
       console.error('Error auto-fetching word data:', error);
     } finally {
@@ -145,6 +156,13 @@ const ChapterDetail = () => {
 
   // Debounced word input handler
   const handleWordInputChange = useCallback((value: string) => {
+    // Check if word has significantly changed (not just typing more chars)
+    const previousWord = newWord.word;
+    const hasWordChanged = previousWord && value && 
+      previousWord.length >= 2 && 
+      !value.startsWith(previousWord) && 
+      !previousWord.startsWith(value);
+    
     setNewWord(prev => ({ ...prev, word: value }));
     
     // Clear existing timeout
@@ -154,11 +172,12 @@ const ChapterDetail = () => {
     
     // Set new timeout for auto-fetch
     const newTimeoutId = setTimeout(() => {
-      autoFetchWordData(value);
+      // Force refresh if word has changed significantly
+      autoFetchWordData(value, hasWordChanged);
     }, 1000); // 1 second debounce
     
     setFetchTimeoutId(newTimeoutId);
-  }, [fetchTimeoutId, autoFetchWordData]);
+  }, [fetchTimeoutId, autoFetchWordData, newWord.word]);
 
 
   // Fetch definition for existing word (only populate empty fields)
