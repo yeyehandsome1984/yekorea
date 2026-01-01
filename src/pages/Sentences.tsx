@@ -410,41 +410,22 @@ const Sentences = () => {
                   </div>
                 </div>
 
-                {/* TOPIK Level and Category */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="topik">TOPIK Level</Label>
-                    <Select 
-                      value={newSentence.topikLevel || 'none'} 
-                      onValueChange={(value) => setNewSentence({ ...newSentence, topikLevel: value === 'none' ? '' : value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select level..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No TOPIK</SelectItem>
-                        <SelectItem value="TOPIK-1">TOPIK-1</SelectItem>
-                        <SelectItem value="TOPIK-2">TOPIK-2</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Category *</Label>
-                    <Select 
-                      value={newSentence.category || ''} 
-                      onValueChange={(value) => setNewSentence({ ...newSentence, category: value })}
-                    >
-                      <SelectTrigger className={!newSentence.category ? 'border-destructive' : ''}>
-                        <SelectValue placeholder="Select category..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CATEGORIES.map(cat => (
-                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                {/* Category */}
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category *</Label>
+                  <Select 
+                    value={newSentence.category || ''} 
+                    onValueChange={(value) => setNewSentence({ ...newSentence, category: value })}
+                  >
+                    <SelectTrigger className={!newSentence.category ? 'border-destructive' : ''}>
+                      <SelectValue placeholder="Select category..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Difficulty Level */}
@@ -591,16 +572,6 @@ const Sentences = () => {
             </SelectContent>
           </Select>
 
-          <Select value={filterTopik} onValueChange={setFilterTopik}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="TOPIK Level" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Levels</SelectItem>
-              <SelectItem value="TOPIK-1">TOPIK-1</SelectItem>
-              <SelectItem value="TOPIK-2">TOPIK-2</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         {/* Sentences List */}
