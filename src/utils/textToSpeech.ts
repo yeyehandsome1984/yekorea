@@ -20,8 +20,17 @@ export const speakKorean = (text: string): void => {
   utterance.pitch = 1.0;
   utterance.volume = 1.0;
 
-  // Speak the text
-  window.speechSynthesis.speak(utterance);
+  // Workaround for Chrome bug - voices may not be loaded yet
+  const voices = window.speechSynthesis.getVoices();
+  const koreanVoice = voices.find(voice => voice.lang.startsWith('ko'));
+  if (koreanVoice) {
+    utterance.voice = koreanVoice;
+  }
+
+  // Chrome sometimes pauses after cancel() - add small delay
+  setTimeout(() => {
+    window.speechSynthesis.speak(utterance);
+  }, 50);
 };
 
 export const stopSpeaking = (): void => {

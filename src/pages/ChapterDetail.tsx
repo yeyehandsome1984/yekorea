@@ -163,7 +163,24 @@ const ChapterDetail = () => {
       !value.startsWith(previousWord) && 
       !previousWord.startsWith(value);
     
-    setNewWord(prev => ({ ...prev, word: value }));
+    // If word changed significantly, clear all fields to avoid showing stale data
+    if (hasWordChanged) {
+      setNewWord({
+        word: value,
+        definition: '',
+        phonetic: '',
+        example: '',
+        notes: '',
+        isBookmarked: false,
+        difficulty: 3,
+        topikLevel: '',
+        tags: [],
+        priority: 3
+      });
+      setKoreanDefinition('');
+    } else {
+      setNewWord(prev => ({ ...prev, word: value }));
+    }
     
     // Clear existing timeout
     if (fetchTimeoutId) {
