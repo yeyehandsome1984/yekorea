@@ -595,7 +595,9 @@ export default function StudyTracker() {
   const totalHours = Object.values(hoursByTopic).reduce((sum, h) => sum + h, 0);
 
   // Pagination calculations - now based on visible sessions
-  const visibleSessions = showOlderSessions ? filteredSessions : recentSessions;
+  // When user has custom date filters, show all filtered sessions (bypass 30-day split)
+  const hasCustomDateFilter = filterDateFrom || filterDateTo;
+  const visibleSessions = hasCustomDateFilter ? filteredSessions : (showOlderSessions ? filteredSessions : recentSessions);
   const indexOfLastSession = currentPage * sessionsPerPage;
   const indexOfFirstSession = indexOfLastSession - sessionsPerPage;
   const currentSessions = visibleSessions.slice(indexOfFirstSession, indexOfLastSession);
@@ -1046,7 +1048,7 @@ export default function StudyTracker() {
                     {sessionsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     Study Sessions
                     <span className="text-sm font-normal text-muted-foreground">
-                      ({showOlderSessions ? filteredSessions.length : recentSessions.length} shown{olderSessions.length > 0 && !showOlderSessions && `, ${olderSessions.length} older hidden`})
+                      ({visibleSessions.length} shown{!hasCustomDateFilter && olderSessions.length > 0 && !showOlderSessions && `, ${olderSessions.length} older hidden`})
                     </span>
                   </CardTitle>
                 </Button>
@@ -1054,7 +1056,7 @@ export default function StudyTracker() {
             </CardHeader>
             <CollapsibleContent>
               <CardContent className="pt-2">
-                {olderSessions.length > 0 && (
+                {!hasCustomDateFilter && olderSessions.length > 0 && (
                   <div className="mb-4">
                     <Button
                       variant="outline"
