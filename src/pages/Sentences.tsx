@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Search, Filter, BookOpen, X, Languages, Edit, Volume2 } from "lucide-react";
+import { Plus, Search, Filter, BookOpen, X, Languages, Edit, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,7 +34,7 @@ import Navbar from "@/components/layout/Navbar";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAllWords } from "@/lib/database";
-import { speakKorean } from "@/utils/textToSpeech";
+import { speakKorean, stopSpeaking } from "@/utils/textToSpeech";
 
 interface Sentence {
   id: string;
@@ -78,6 +78,7 @@ const Sentences = () => {
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterTopik, setFilterTopik] = useState<string>("all");
   const [vocabSearchQuery, setVocabSearchQuery] = useState("");
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
   
   const [newSentence, setNewSentence] = useState<Omit<Sentence, 'id' | 'createdAt'>>({
     korean: "",
@@ -735,14 +736,29 @@ const Sentences = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => {
-                          // Strip HTML tags to get plain text for TTS
-                          const plainText = sentence.korean.replace(/<[^>]*>/g, '');
-                          speakKorean(plainText);
+                          if (speakingId === sentence.id) {
+                            stopSpeaking();
+                            setSpeakingId(null);
+                          } else {
+                            // Strip HTML tags to get plain text for TTS
+                            const plainText = sentence.korean.replace(/<[^>]*>/g, '');
+                            stopSpeaking(); // Stop any ongoing speech first
+                            speakKorean(plainText);
+                            setSpeakingId(sentence.id);
+                            
+                            // Listen for when speech ends
+                            const checkSpeaking = setInterval(() => {
+                              if (!window.speechSynthesis.speaking) {
+                                setSpeakingId(null);
+                                clearInterval(checkSpeaking);
+                              }
+                            }, 100);
+                          }
                         }}
                         className="h-8 w-8"
-                        title="Listen to pronunciation"
+                        title={speakingId === sentence.id ? "Stop speaking" : "Listen to pronunciation"}
                       >
-                        <Volume2 className="h-4 w-4" />
+                        {speakingId === sentence.id ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                       </Button>
                       <Button
                         variant="ghost"
