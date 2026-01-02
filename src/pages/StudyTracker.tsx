@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar as CalendarIcon, Filter, Trash2, Image as ImageIcon, X, Pencil, FileText, Download, Link, Star, ExternalLink } from "lucide-react";
-import { format } from "date-fns";
+import { Plus, Calendar as CalendarIcon, Filter, Trash2, Image as ImageIcon, X, Pencil, FileText, Download, Link, Star, ExternalLink, ChevronDown, ChevronRight } from "lucide-react";
+import { format, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
   fetchAllStudySessions,
@@ -89,8 +90,22 @@ export default function StudyTracker() {
   const [linkDescription, setLinkDescription] = useState("");
   const [linkUsefulness, setLinkUsefulness] = useState(3);
 
-  // Get all unique topics
+  // Study Links filter states (independent filters)
+  const [linkFilterSubject, setLinkFilterSubject] = useState<string>("all");
+  const [linkFilterDatePreset, setLinkFilterDatePreset] = useState<string>("all");
+  const [linkFilterDateFrom, setLinkFilterDateFrom] = useState<Date | undefined>();
+  const [linkFilterDateTo, setLinkFilterDateTo] = useState<Date | undefined>();
+  const [linkFilterUsefulness, setLinkFilterUsefulness] = useState<string>("all");
+
+  // Collapsible section states
+  const [sessionsOpen, setSessionsOpen] = useState(true);
+  const [showOlderSessions, setShowOlderSessions] = useState(false);
+  const [certificatesOpen, setCertificatesOpen] = useState(true);
+  const [linksOpen, setLinksOpen] = useState(true);
+
+  // Get all unique topics and subjects
   const allTopics = Array.from(new Set(sessions.map(s => s.topic)));
+  const allLinkSubjects = Array.from(new Set(studyLinks.map(l => l.subject)));
 
   useEffect(() => {
     loadSessions();
@@ -510,6 +525,67 @@ export default function StudyTracker() {
     ));
   };
 
+  // Separate sessions into recent (last 30 days) and older
+  const thirtyDaysAgo = subDays(new Date(), 30);
+  const recentSessions = useMemo(() => 
+    filteredSessions.filter(s => new Date(s.study_date) >= thirtyDaysAgo),
+    [filteredSessions]
+  );
+  const olderSessions = useMemo(() => 
+    filteredSessions.filter(s => new Date(s.study_date) < thirtyDaysAgo),
+    [filteredSessions]
+  );
+
+  // Filter study links (independent filters)
+  const filteredStudyLinks = useMemo(() => {
+    let filtered = [...studyLinks];
+
+    // Subject filter
+    if (linkFilterSubject !== "all") {
+      filtered = filtered.filter(l => l.subject === linkFilterSubject);
+    }
+
+    // Date preset filter
+    if (linkFilterDatePreset !== "all" && linkFilterDatePreset !== "custom") {
+      const now = new Date();
+      let fromDate: Date;
+      switch (linkFilterDatePreset) {
+        case "7days":
+          fromDate = subDays(now, 7);
+          break;
+        case "30days":
+          fromDate = subDays(now, 30);
+          break;
+        case "90days":
+          fromDate = subDays(now, 90);
+          break;
+        default:
+          fromDate = new Date(0);
+      }
+      filtered = filtered.filter(l => new Date(l.created_at) >= fromDate);
+    }
+
+    // Custom date range filter
+    if (linkFilterDatePreset === "custom") {
+      if (linkFilterDateFrom) {
+        filtered = filtered.filter(l => new Date(l.created_at) >= linkFilterDateFrom);
+      }
+      if (linkFilterDateTo) {
+        const toDate = new Date(linkFilterDateTo);
+        toDate.setHours(23, 59, 59, 999);
+        filtered = filtered.filter(l => new Date(l.created_at) <= toDate);
+      }
+    }
+
+    // Usefulness filter
+    if (linkFilterUsefulness !== "all") {
+      const rating = parseInt(linkFilterUsefulness);
+      filtered = filtered.filter(l => l.usefulness === rating);
+    }
+
+    return filtered;
+  }, [studyLinks, linkFilterSubject, linkFilterDatePreset, linkFilterDateFrom, linkFilterDateTo, linkFilterUsefulness]);
+
   // Calculate total hours by topic
   const hoursByTopic = filteredSessions.reduce((acc, session) => {
     acc[session.topic] = (acc[session.topic] || 0) + Number(session.hours);
@@ -518,11 +594,12 @@ export default function StudyTracker() {
 
   const totalHours = Object.values(hoursByTopic).reduce((sum, h) => sum + h, 0);
 
-  // Pagination calculations
+  // Pagination calculations - now based on visible sessions
+  const visibleSessions = showOlderSessions ? filteredSessions : recentSessions;
   const indexOfLastSession = currentPage * sessionsPerPage;
   const indexOfFirstSession = indexOfLastSession - sessionsPerPage;
-  const currentSessions = filteredSessions.slice(indexOfFirstSession, indexOfLastSession);
-  const totalPages = Math.ceil(filteredSessions.length / sessionsPerPage);
+  const currentSessions = visibleSessions.slice(indexOfFirstSession, indexOfLastSession);
+  const totalPages = Math.ceil(visibleSessions.length / sessionsPerPage);
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
@@ -959,270 +1036,448 @@ export default function StudyTracker() {
           </CardContent>
         </Card>
 
-        {/* Sessions Table */}
-        <Card>
-          <CardContent className="pt-6">
-            {loading ? (
-              <p className="text-center py-8 text-muted-foreground">Loading...</p>
-            ) : filteredSessions.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">No study sessions found</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="h-8">
-                      <TableHead className="text-xs py-2">Date</TableHead>
-                      <TableHead className="text-xs py-2">Topic</TableHead>
-                      <TableHead className="text-xs py-2">Hours</TableHead>
-                      <TableHead className="text-xs py-2">Summary</TableHead>
-                      <TableHead className="text-xs py-2">Images</TableHead>
-                      <TableHead className="text-xs py-2 text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentSessions.map((session) => (
-                      <TableRow key={session.id} className="h-10">
-                        <TableCell className="whitespace-nowrap text-xs py-2">
-                          {format(new Date(session.study_date), "MMM dd, yyyy")}
-                        </TableCell>
-                        <TableCell className="text-xs py-2">
-                          <span className="font-medium">{session.topic}</span>
-                        </TableCell>
-                        <TableCell className="text-xs py-2">{session.hours}h</TableCell>
-                        <TableCell className="max-w-md text-xs py-2">
-                          <div className="line-clamp-2">{session.summary || "-"}</div>
-                        </TableCell>
-                        <TableCell className="text-xs py-2">
-                          {session.image_urls && session.image_urls.length > 0 ? (
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-7 text-xs px-2">
-                                  <ImageIcon className="h-3 w-3 mr-1" />
-                                  {session.image_urls.length}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-80">
-                                <div className="grid grid-cols-2 gap-2">
-                                  {session.image_urls.map((url, index) => (
-                                    <img
-                                      key={index}
-                                      src={url}
-                                      alt={`Session ${index + 1}`}
-                                      className="w-full h-32 object-cover rounded border"
-                                    />
-                                  ))}
-                                </div>
-                              </PopoverContent>
-                            </Popover>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right py-2">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7"
-                              onClick={() => handleEdit(session)}
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7"
-                              onClick={() => handleDelete(session.id)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-            
-            {/* Pagination */}
-            {!loading && filteredSessions.length > sessionsPerPage && (
-              <div className="mt-4">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious 
-                        onClick={() => currentPage > 1 && paginate(currentPage - 1)}
-                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                      />
-                    </PaginationItem>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          onClick={() => paginate(page)}
-                          isActive={currentPage === page}
-                          className="cursor-pointer"
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-                    <PaginationItem>
-                      <PaginationNext 
-                        onClick={() => currentPage < totalPages && paginate(currentPage + 1)}
-                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Certificates Section */}
-        {certificates.length > 0 && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Certificates</CardTitle>
+        {/* Sessions Table - Collapsible */}
+        <Collapsible open={sessionsOpen} onOpenChange={setSessionsOpen}>
+          <Card>
+            <CardHeader className="pb-2">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between p-0 h-auto hover:bg-transparent">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    {sessionsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    Study Sessions
+                    <span className="text-sm font-normal text-muted-foreground">
+                      ({showOlderSessions ? filteredSessions.length : recentSessions.length} shown{olderSessions.length > 0 && !showOlderSessions && `, ${olderSessions.length} older hidden`})
+                    </span>
+                  </CardTitle>
+                </Button>
+              </CollapsibleTrigger>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {certificates.map((cert) => (
-                  <Card key={cert.id} className="border">
-                    <CardContent className="pt-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-semibold text-sm flex-1">{cert.certificate_name}</h3>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditCertificate(cert)}
-                            className="h-6 w-6 p-0"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteCertificate(cert.id)}
-                            className="h-6 w-6 p-0"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {/* Certificate thumbnail preview */}
-                      <div className="mb-3 w-full h-32 rounded border overflow-hidden bg-muted">
-                        {cert.certificate_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                          <img 
-                            src={cert.certificate_url} 
-                            alt={cert.certificate_name}
-                            className="w-full h-full object-cover"
+            <CollapsibleContent>
+              <CardContent className="pt-2">
+                {olderSessions.length > 0 && (
+                  <div className="mb-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowOlderSessions(!showOlderSessions);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      {showOlderSessions ? "Hide" : "Show"} sessions older than 30 days ({olderSessions.length})
+                    </Button>
+                  </div>
+                )}
+                {loading ? (
+                  <p className="text-center py-8 text-muted-foreground">Loading...</p>
+                ) : visibleSessions.length === 0 ? (
+                  <p className="text-center py-8 text-muted-foreground">No study sessions found</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="h-8">
+                          <TableHead className="text-xs py-2">Date</TableHead>
+                          <TableHead className="text-xs py-2">Topic</TableHead>
+                          <TableHead className="text-xs py-2">Hours</TableHead>
+                          <TableHead className="text-xs py-2">Summary</TableHead>
+                          <TableHead className="text-xs py-2">Images</TableHead>
+                          <TableHead className="text-xs py-2 text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {currentSessions.map((session) => (
+                          <TableRow key={session.id} className="h-10">
+                            <TableCell className="whitespace-nowrap text-xs py-2">
+                              {format(new Date(session.study_date), "MMM dd, yyyy")}
+                            </TableCell>
+                            <TableCell className="text-xs py-2">
+                              <span className="font-medium">{session.topic}</span>
+                            </TableCell>
+                            <TableCell className="text-xs py-2">{session.hours}h</TableCell>
+                            <TableCell className="max-w-md text-xs py-2">
+                              <div className="line-clamp-2">{session.summary || "-"}</div>
+                            </TableCell>
+                            <TableCell className="text-xs py-2">
+                              {session.image_urls && session.image_urls.length > 0 ? (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-7 text-xs px-2">
+                                      <ImageIcon className="h-3 w-3 mr-1" />
+                                      {session.image_urls.length}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-80">
+                                    <div className="grid grid-cols-2 gap-2">
+                                      {session.image_urls.map((url, index) => (
+                                        <img
+                                          key={index}
+                                          src={url}
+                                          alt={`Session ${index + 1}`}
+                                          className="w-full h-32 object-cover rounded border"
+                                        />
+                                      ))}
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right py-2">
+                              <div className="flex justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7"
+                                  onClick={() => handleEdit(session)}
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7"
+                                  onClick={() => handleDelete(session.id)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+                
+                {/* Pagination */}
+                {!loading && visibleSessions.length > sessionsPerPage && (
+                  <div className="mt-4">
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            onClick={() => currentPage > 1 && paginate(currentPage - 1)}
+                            className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                           />
-                        ) : cert.certificate_url.match(/\.pdf$/i) ? (
-                          <object
-                            data={cert.certificate_url}
-                            type="application/pdf"
-                            className="w-full h-full"
-                          >
-                            <div className="flex items-center justify-center h-full">
-                              <FileText className="h-12 w-12 text-muted-foreground" />
-                            </div>
-                          </object>
-                        ) : (
-                          <div className="flex items-center justify-center h-full">
-                            <FileText className="h-12 w-12 text-muted-foreground" />
-                          </div>
-                        )}
-                      </div>
-                      
-                      <p className="text-xs text-muted-foreground mb-2">
-                        Issued: {format(new Date(cert.issue_date), "MMM dd, yyyy")}
-                      </p>
-                      {cert.description && (
-                        <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
-                          {cert.description}
-                        </p>
-                      )}
-                      <a
-                        href={cert.certificate_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center text-xs text-primary hover:underline"
-                      >
-                        <Download className="h-3 w-3 mr-1" />
-                        View Certificate
-                      </a>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
+                        </PaginationItem>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              onClick={() => paginate(page)}
+                              isActive={currentPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+                        <PaginationItem>
+                          <PaginationNext 
+                            onClick={() => currentPage < totalPages && paginate(currentPage + 1)}
+                            className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
+              </CardContent>
+            </CollapsibleContent>
           </Card>
+        </Collapsible>
+
+        {/* Certificates Section - Collapsible */}
+        {certificates.length > 0 && (
+          <Collapsible open={certificatesOpen} onOpenChange={setCertificatesOpen} className="mt-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-between p-0 h-auto hover:bg-transparent">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      {certificatesOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      Certificates
+                      <span className="text-sm font-normal text-muted-foreground">({certificates.length})</span>
+                    </CardTitle>
+                  </Button>
+                </CollapsibleTrigger>
+              </CardHeader>
+              <CollapsibleContent>
+                <CardContent className="pt-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {certificates.map((cert) => (
+                      <Card key={cert.id} className="border">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <h3 className="font-semibold text-sm flex-1">{cert.certificate_name}</h3>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditCertificate(cert)}
+                                className="h-6 w-6 p-0"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteCertificate(cert.id)}
+                                className="h-6 w-6 p-0"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          {/* Certificate thumbnail preview */}
+                          <div className="mb-3 w-full h-32 rounded border overflow-hidden bg-muted">
+                            {cert.certificate_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                              <img 
+                                src={cert.certificate_url} 
+                                alt={cert.certificate_name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : cert.certificate_url.match(/\.pdf$/i) ? (
+                              <object
+                                data={cert.certificate_url}
+                                type="application/pdf"
+                                className="w-full h-full"
+                              >
+                                <div className="flex items-center justify-center h-full">
+                                  <FileText className="h-12 w-12 text-muted-foreground" />
+                                </div>
+                              </object>
+                            ) : (
+                              <div className="flex items-center justify-center h-full">
+                                <FileText className="h-12 w-12 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Issued: {format(new Date(cert.issue_date), "MMM dd, yyyy")}
+                          </p>
+                          {cert.description && (
+                            <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                              {cert.description}
+                            </p>
+                          )}
+                          <a
+                            href={cert.certificate_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center text-xs text-primary hover:underline"
+                          >
+                            <Download className="h-3 w-3 mr-1" />
+                            View Certificate
+                          </a>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
         )}
 
-        {/* Study Links Section */}
+        {/* Study Links Section - Collapsible with Filters */}
         {studyLinks.length > 0 && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Study Links</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {studyLinks.map((link) => (
-                  <Card key={link.id} className="border hover:shadow-md transition-shadow">
-                    <CardContent className="pt-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <span className="inline-block px-2 py-1 text-xs font-medium bg-primary/10 text-primary rounded">
-                          {link.subject}
-                        </span>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditLink(link)}
-                            className="h-6 w-6 p-0"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteLink(link.id)}
-                            className="h-6 w-6 p-0"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+          <Collapsible open={linksOpen} onOpenChange={setLinksOpen} className="mt-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-between p-0 h-auto hover:bg-transparent">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      {linksOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      Study Links
+                      <span className="text-sm font-normal text-muted-foreground">({filteredStudyLinks.length} of {studyLinks.length})</span>
+                    </CardTitle>
+                  </Button>
+                </CollapsibleTrigger>
+              </CardHeader>
+              <CollapsibleContent>
+                <CardContent className="pt-2">
+                  {/* Study Links Filters */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 p-4 bg-muted/50 rounded-lg">
+                    <div>
+                      <Label className="text-xs">Subject</Label>
+                      <Select value={linkFilterSubject} onValueChange={setLinkFilterSubject}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Subjects</SelectItem>
+                          {allLinkSubjects.map(subject => (
+                            <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Date Added</Label>
+                      <Select value={linkFilterDatePreset} onValueChange={(value) => {
+                        setLinkFilterDatePreset(value);
+                        if (value !== "custom") {
+                          setLinkFilterDateFrom(undefined);
+                          setLinkFilterDateTo(undefined);
+                        }
+                      }}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Time</SelectItem>
+                          <SelectItem value="7days">Last 7 days</SelectItem>
+                          <SelectItem value="30days">Last 30 days</SelectItem>
+                          <SelectItem value="90days">Last 90 days</SelectItem>
+                          <SelectItem value="custom">Custom Range</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {linkFilterDatePreset === "custom" && (
+                      <>
+                        <div>
+                          <Label className="text-xs">From</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" className="w-full h-8 text-xs justify-start">
+                                <CalendarIcon className="mr-1 h-3 w-3" />
+                                {linkFilterDateFrom ? format(linkFilterDateFrom, "MMM dd") : "Start"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={linkFilterDateFrom}
+                                onSelect={setLinkFilterDateFrom}
+                                initialFocus
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
                         </div>
+                        <div>
+                          <Label className="text-xs">To</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" className="w-full h-8 text-xs justify-start">
+                                <CalendarIcon className="mr-1 h-3 w-3" />
+                                {linkFilterDateTo ? format(linkFilterDateTo, "MMM dd") : "End"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={linkFilterDateTo}
+                                onSelect={setLinkFilterDateTo}
+                                initialFocus
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </>
+                    )}
+                    {linkFilterDatePreset !== "custom" && (
+                      <div>
+                        <Label className="text-xs">Usefulness</Label>
+                        <Select value={linkFilterUsefulness} onValueChange={setLinkFilterUsefulness}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Ratings</SelectItem>
+                            <SelectItem value="5">★★★★★ (5)</SelectItem>
+                            <SelectItem value="4">★★★★☆ (4+)</SelectItem>
+                            <SelectItem value="3">★★★☆☆ (3+)</SelectItem>
+                            <SelectItem value="2">★★☆☆☆ (2+)</SelectItem>
+                            <SelectItem value="1">★☆☆☆☆ (1+)</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                      
-                      <div className="flex items-center gap-0.5 mb-2">
-                        {renderStars(link.usefulness)}
+                    )}
+                    {(linkFilterSubject !== "all" || linkFilterDatePreset !== "all" || linkFilterUsefulness !== "all") && (
+                      <div className="flex items-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs"
+                          onClick={() => {
+                            setLinkFilterSubject("all");
+                            setLinkFilterDatePreset("all");
+                            setLinkFilterDateFrom(undefined);
+                            setLinkFilterDateTo(undefined);
+                            setLinkFilterUsefulness("all");
+                          }}
+                        >
+                          Clear Filters
+                        </Button>
                       </div>
-                      
-                      {link.description && (
-                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                          {link.description}
-                        </p>
-                      )}
-                      
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center text-sm text-primary hover:underline break-all"
-                      >
-                        <ExternalLink className="h-4 w-4 mr-1 flex-shrink-0" />
-                        <span className="line-clamp-1">{link.url}</span>
-                      </a>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                    )}
+                  </div>
+
+                  {filteredStudyLinks.length === 0 ? (
+                    <p className="text-center py-8 text-muted-foreground">No study links match your filters</p>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {filteredStudyLinks.map((link) => (
+                        <Card key={link.id} className="border hover:shadow-md transition-shadow">
+                          <CardContent className="pt-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <span className="inline-block px-2 py-1 text-xs font-medium bg-primary/10 text-primary rounded">
+                                {link.subject}
+                              </span>
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditLink(link)}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteLink(link.id)}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-0.5 mb-2">
+                              {renderStars(link.usefulness)}
+                            </div>
+                            
+                            {link.description && (
+                              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                                {link.description}
+                              </p>
+                            )}
+                            
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center text-sm text-primary hover:underline break-all"
+                            >
+                              <ExternalLink className="h-4 w-4 mr-1 flex-shrink-0" />
+                              <span className="line-clamp-1">{link.url}</span>
+                            </a>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
         )}
       </div>
     </div>
