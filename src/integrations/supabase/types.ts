@@ -119,6 +119,36 @@ export type Database = {
         }
         Relationships: []
       }
+      study_links: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          subject: string
+          updated_at: string
+          url: string
+          usefulness: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          subject?: string
+          updated_at?: string
+          url: string
+          usefulness?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          subject?: string
+          updated_at?: string
+          url?: string
+          usefulness?: number
+        }
+        Relationships: []
+      }
       study_sessions: {
         Row: {
           created_at: string
