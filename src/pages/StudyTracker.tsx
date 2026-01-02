@@ -12,7 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar as CalendarIcon, Filter, Trash2, Image as ImageIcon, X, Pencil, FileText, Download } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Filter, Trash2, Image as ImageIcon, X, Pencil, FileText, Download, Link, Star, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
@@ -31,6 +31,14 @@ import {
   uploadCertificateFile,
   Certificate,
 } from "@/lib/certificates";
+import {
+  fetchAllStudyLinks,
+  createStudyLink,
+  updateStudyLink,
+  deleteStudyLink,
+  StudyLink,
+  PRESET_SUBJECTS,
+} from "@/lib/studyLinks";
 
 const PRESET_TOPICS = ["Data", "Web/App", "Korean"];
 
@@ -71,12 +79,23 @@ export default function StudyTracker() {
   const [certFile, setCertFile] = useState<File | null>(null);
   const [certUploading, setCertUploading] = useState(false);
 
+  // Study Links states
+  const [studyLinks, setStudyLinks] = useState<StudyLink[]>([]);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [editingLink, setEditingLink] = useState<StudyLink | null>(null);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkSubject, setLinkSubject] = useState("Korean");
+  const [customSubject, setCustomSubject] = useState("");
+  const [linkDescription, setLinkDescription] = useState("");
+  const [linkUsefulness, setLinkUsefulness] = useState(3);
+
   // Get all unique topics
   const allTopics = Array.from(new Set(sessions.map(s => s.topic)));
 
   useEffect(() => {
     loadSessions();
     loadCertificates();
+    loadStudyLinks();
   }, []);
 
   useEffect(() => {
@@ -107,6 +126,19 @@ export default function StudyTracker() {
       toast({
         title: "Error",
         description: "Failed to load certificates",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const loadStudyLinks = async () => {
+    try {
+      const data = await fetchAllStudyLinks();
+      setStudyLinks(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load study links",
         variant: "destructive",
       });
     }
@@ -379,6 +411,105 @@ export default function StudyTracker() {
     }
   };
 
+  // Study Links handlers
+  const handleEditLink = (link: StudyLink) => {
+    setEditingLink(link);
+    setLinkUrl(link.url);
+    setLinkSubject(PRESET_SUBJECTS.includes(link.subject) ? link.subject : "custom");
+    if (!PRESET_SUBJECTS.includes(link.subject)) {
+      setCustomSubject(link.subject);
+    }
+    setLinkDescription(link.description || "");
+    setLinkUsefulness(link.usefulness);
+    setLinkDialogOpen(true);
+  };
+
+  const handleLinkSubmit = async () => {
+    const finalSubject = linkSubject === "custom" ? customSubject : linkSubject;
+
+    if (!linkUrl || !finalSubject) {
+      toast({
+        title: "Error",
+        description: "Please provide URL and subject",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (editingLink) {
+        await updateStudyLink(editingLink.id, {
+          url: linkUrl,
+          subject: finalSubject,
+          description: linkDescription || null,
+          usefulness: linkUsefulness,
+        });
+        toast({
+          title: "Success",
+          description: "Study link updated",
+        });
+      } else {
+        await createStudyLink({
+          url: linkUrl,
+          subject: finalSubject,
+          description: linkDescription || null,
+          usefulness: linkUsefulness,
+        });
+        toast({
+          title: "Success",
+          description: "Study link added",
+        });
+      }
+
+      // Reset form
+      setLinkUrl("");
+      setLinkSubject("Korean");
+      setCustomSubject("");
+      setLinkDescription("");
+      setLinkUsefulness(3);
+      setEditingLink(null);
+      setLinkDialogOpen(false);
+      loadStudyLinks();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: editingLink ? "Failed to update study link" : "Failed to add study link",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteLink = async (id: string) => {
+    if (!confirm("Delete this study link?")) return;
+
+    try {
+      await deleteStudyLink(id);
+      toast({
+        title: "Success",
+        description: "Study link deleted",
+      });
+      loadStudyLinks();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete study link",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star
+        key={i}
+        className={cn(
+          "h-4 w-4",
+          i < rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
+        )}
+      />
+    ));
+  };
+
   // Calculate total hours by topic
   const hoursByTopic = filteredSessions.reduce((acc, session) => {
     acc[session.topic] = (acc[session.topic] || 0) + Number(session.hours);
@@ -630,6 +761,98 @@ export default function StudyTracker() {
 
                 <Button onClick={handleCertificateSubmit} className="w-full" disabled={certUploading}>
                   {certUploading ? "Uploading..." : (editingCertificate ? "Update Certificate" : "Add Certificate")}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={linkDialogOpen} onOpenChange={(open) => {
+            setLinkDialogOpen(open);
+            if (!open) {
+              setLinkUrl("");
+              setLinkSubject("Korean");
+              setCustomSubject("");
+              setLinkDescription("");
+              setLinkUsefulness(3);
+              setEditingLink(null);
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Link className="mr-2 h-4 w-4" />
+                Add Study Links
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>{editingLink ? "Edit Study Link" : "Add Study Link"}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>URL</Label>
+                  <Input
+                    placeholder="e.g., https://youtube.com/watch?v=..."
+                    value={linkUrl}
+                    onChange={(e) => setLinkUrl(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label>Subject</Label>
+                  <Select value={linkSubject} onValueChange={setLinkSubject}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRESET_SUBJECTS.map(subject => (
+                        <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                      ))}
+                      <SelectItem value="custom">Custom Subject...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {linkSubject === "custom" && (
+                    <Input
+                      className="mt-2"
+                      placeholder="Enter custom subject"
+                      value={customSubject}
+                      onChange={(e) => setCustomSubject(e.target.value)}
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <Label>Description (Optional)</Label>
+                  <Textarea
+                    placeholder="What is this resource about?"
+                    value={linkDescription}
+                    onChange={(e) => setLinkDescription(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+
+                <div>
+                  <Label>Usefulness Rating</Label>
+                  <div className="flex items-center gap-1 mt-2">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setLinkUsefulness(i + 1)}
+                        className="p-1 hover:scale-110 transition-transform"
+                      >
+                        <Star
+                          className={cn(
+                            "h-6 w-6",
+                            i < linkUsefulness ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
+                          )}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <Button onClick={handleLinkSubmit} className="w-full">
+                  {editingLink ? "Update Link" : "Add Link"}
                 </Button>
               </div>
             </DialogContent>
@@ -931,6 +1154,68 @@ export default function StudyTracker() {
                       >
                         <Download className="h-3 w-3 mr-1" />
                         View Certificate
+                      </a>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Study Links Section */}
+        {studyLinks.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Study Links</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {studyLinks.map((link) => (
+                  <Card key={link.id} className="border hover:shadow-md transition-shadow">
+                    <CardContent className="pt-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="inline-block px-2 py-1 text-xs font-medium bg-primary/10 text-primary rounded">
+                          {link.subject}
+                        </span>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditLink(link)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteLink(link.id)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-0.5 mb-2">
+                        {renderStars(link.usefulness)}
+                      </div>
+                      
+                      {link.description && (
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                          {link.description}
+                        </p>
+                      )}
+                      
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center text-sm text-primary hover:underline break-all"
+                      >
+                        <ExternalLink className="h-4 w-4 mr-1 flex-shrink-0" />
+                        <span className="line-clamp-1">{link.url}</span>
                       </a>
                     </CardContent>
                   </Card>
