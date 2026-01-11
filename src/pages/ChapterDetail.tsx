@@ -101,7 +101,6 @@ const ChapterDetail = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('alphabetical');
-  const [topikFilter, setTopikFilter] = useState<string>('all');
   const [duplicatesMap, setDuplicatesMap] = useState<Map<string, any>>(new Map());
   const [bulkSelectMode, setBulkSelectMode] = useState(false);
   const [selectedWordIds, setSelectedWordIds] = useState<Set<string>>(new Set());
@@ -1052,14 +1051,7 @@ const ChapterDetail = () => {
       filtered = filtered.filter(word => word.difficulty === difficulty);
     }
     
-    // TOPIK filter
-    if (topikFilter !== 'all') {
-      if (topikFilter === 'none') {
-        filtered = filtered.filter(word => !word.topikLevel || word.topikLevel === '');
-      } else {
-        filtered = filtered.filter(word => word.topikLevel === topikFilter);
-      }
-    }
+    
     
     // Sorting
     if (sortBy === 'alphabetical') {
@@ -1107,14 +1099,14 @@ const ChapterDetail = () => {
       <Navbar />
       
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-center mb-6">
+        <div className="flex flex-wrap items-center gap-2 mb-6">
           {mode !== 'flashcards' && (
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    <FileSpreadsheet className="h-4 w-4 mr-1" />
-                    Excel
+                  <Button variant="outline" size="sm">
+                    <FileSpreadsheet className="h-4 w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Excel</span>
                     <ChevronDown className="h-4 w-4 ml-1" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -1130,12 +1122,12 @@ const ChapterDetail = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
               
-              <Button variant="outline" onClick={handleDownloadPDF}>
-                <Download className="h-4 w-4 mr-1" />
-                Download PDF
+              <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+                <Download className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">PDF</span>
               </Button>
 
-              <Button variant="outline" onClick={handleRemoveDuplicates} className="h-10 w-10 p-0" title="Remove duplicate words">
+              <Button variant="outline" size="sm" onClick={handleRemoveDuplicates} className="h-9 w-9 p-0" title="Remove duplicate words">
                 <FilterX className="h-4 w-4" />
               </Button>
             </div>
@@ -1149,9 +1141,10 @@ const ChapterDetail = () => {
             <FlashcardMode words={words.filter(w => !w.isKnown)} onComplete={handleFlashcardComplete} onBack={() => setMode('table')} onBookmark={handleBookmarkToggle} />
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-2">
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-8">
+            <div className="flex flex-col gap-3 mb-4">
+              {/* Action buttons - wrap on mobile */}
+              <div className="flex flex-wrap items-center gap-2">
                 <Button 
                   onClick={() => {
                     setBulkSelectMode(!bulkSelectMode);
@@ -1162,43 +1155,48 @@ const ChapterDetail = () => {
                   }} 
                   size="sm" 
                   variant={bulkSelectMode ? "secondary" : "outline"}
+                  className="text-xs sm:text-sm"
                 >
-                  {bulkSelectMode ? "Cancel Selection" : "Bulk Copy"}
+                  {bulkSelectMode ? "Cancel" : "Bulk Copy"}
                 </Button>
-                <Button onClick={() => setIsAddingWord(true)} size="sm" variant="outline">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Word
+                <Button onClick={() => setIsAddingWord(true)} size="sm" variant="outline" className="text-xs sm:text-sm">
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Add New Word</span>
                 </Button>
-                <Button onClick={() => setIsBulkAddingWords(true)} size="sm" variant="outline">
-                  <ListPlus className="h-4 w-4 mr-2" />
-                  Bulk Add Words
+                <Button onClick={() => setIsBulkAddingWords(true)} size="sm" variant="outline" className="text-xs sm:text-sm">
+                  <ListPlus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Bulk Add</span>
                 </Button>
-                <Button onClick={() => setShowExcelImport(true)} size="sm" variant="outline">
-                  <FileSpreadsheet className="h-4 w-4 mr-2" />
-                  Excel Import
+                <Button onClick={() => setShowExcelImport(true)} size="sm" variant="outline" className="text-xs sm:text-sm">
+                  <FileSpreadsheet className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Excel</span>
                 </Button>
                 <Button 
                   onClick={handleBulkFetchDefinitions} 
                   size="sm" 
                   variant="outline"
                   disabled={isBulkFetching}
+                  className="text-xs sm:text-sm"
                 >
                   {isBulkFetching ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Fetching...
+                      <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
+                      <span className="hidden sm:inline">Fetching...</span>
                     </>
                   ) : (
                     <>
-                      <Download className="h-4 w-4 mr-2" />
-                      Fetch Missing Data
+                      <Download className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Fetch Data</span>
                     </>
                   )}
                 </Button>
-                <Badge variant="outline">
+              </div>
+              {/* Word count badges */}
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs">
                   {unknownWords.length} to learn
                 </Badge>
-                <Badge variant="outline" className="bg-green-50">
+                <Badge variant="outline" className="bg-green-50 text-xs">
                   {knownWords.length} known
                 </Badge>
               </div>
@@ -1255,7 +1253,7 @@ const ChapterDetail = () => {
                 <Input type="text" placeholder="Search words, definitions, tags..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9" />
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
                   <Label className="text-sm text-muted-foreground mb-1.5 block">Difficulty</Label>
                   <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
@@ -1269,21 +1267,6 @@ const ChapterDetail = () => {
                       <SelectItem value="3">⭐⭐⭐ Level 3</SelectItem>
                       <SelectItem value="4">⭐⭐⭐⭐ Level 4</SelectItem>
                       <SelectItem value="5">⭐⭐⭐⭐⭐ Level 5</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label className="text-sm text-muted-foreground mb-1.5 block">TOPIK Level</Label>
-                  <Select value={topikFilter} onValueChange={setTopikFilter}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="All" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="none">No TOPIK</SelectItem>
-                      <SelectItem value="TOPIK-1">TOPIK-1</SelectItem>
-                      <SelectItem value="TOPIK-2">TOPIK-2</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1305,13 +1288,12 @@ const ChapterDetail = () => {
                   </Select>
                 </div>
                 
-                <div className="flex items-end">
+                <div className="flex items-end col-span-2 sm:col-span-1">
                   <Button 
                     variant="outline" 
                     onClick={() => {
                       setSearchQuery('');
                       setDifficultyFilter('all');
-                      setTopikFilter('all');
                       setSortBy('alphabetical');
                     }}
                     className="h-9 w-full"
@@ -1324,21 +1306,79 @@ const ChapterDetail = () => {
             </div>
 
             <Tabs defaultValue="table">
-              <TabsList className="mb-4">
-                <TabsTrigger value="table">Table View</TabsTrigger>
-                <TabsTrigger value="cards">Card View</TabsTrigger>
-                <TabsTrigger value="known">Known Words ({knownWords.length})</TabsTrigger>
+              <TabsList className="mb-4 w-full sm:w-auto overflow-x-auto flex-nowrap">
+                <TabsTrigger value="table" className="text-xs sm:text-sm">Table</TabsTrigger>
+                <TabsTrigger value="cards" className="text-xs sm:text-sm">Cards</TabsTrigger>
+                <TabsTrigger value="known" className="text-xs sm:text-sm">Known ({knownWords.length})</TabsTrigger>
               </TabsList>
               
               <TabsContent value="table">
-                <div className="border rounded-md overflow-hidden">
+                {/* Mobile card view */}
+                <div className="sm:hidden space-y-3">
+                  {filteredWords(unknownWords).length > 0 ? filteredWords(unknownWords).map(word => (
+                    <div key={word.id} className="border rounded-lg p-3 bg-white">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {bulkSelectMode && (
+                              <Checkbox
+                                checked={selectedWordIds.has(word.id)}
+                                onCheckedChange={() => toggleWordSelection(word.id)}
+                              />
+                            )}
+                            <span className="font-medium text-base">{word.word}</span>
+                            <span className="text-xs text-muted-foreground">{'⭐'.repeat(word.difficulty || 3)}</span>
+                          </div>
+                          {word.phonetic && (
+                            <p className="text-xs text-muted-foreground mt-0.5">[{word.phonetic}]</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <Button variant="ghost" size="sm" onClick={() => speakKorean(word.word)} className="h-7 w-7 p-0">
+                            <Volume2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleMarkAsKnown(word.id)} className="h-7 w-7 p-0">
+                            <Check className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleEditWord(word)} className="h-7 w-7 p-0">
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteWord(word.id)} className="h-7 w-7 p-0 text-destructive">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-sm text-gray-700">{word.definition}</div>
+                      {word.example && (
+                        <div className="mt-2 pt-2 border-t border-border/30 text-xs text-muted-foreground">
+                          <p>{word.example}</p>
+                          {word.notes && <p className="mt-1 text-muted-foreground/70">{word.notes}</p>}
+                        </div>
+                      )}
+                      {word.tags && word.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {word.tags.map((tag, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs">{tag}</Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      {searchQuery || difficultyFilter !== 'all' ? 'No words match your filters' : 'No words to learn in this chapter'}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Desktop table view */}
+                <div className="hidden sm:block border rounded-md overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         {bulkSelectMode && <TableHead className="w-12"></TableHead>}
                         <TableHead>Korean</TableHead>
                         <TableHead>Definition</TableHead>
-                        <TableHead>Level</TableHead>
+                        <TableHead className="hidden md:table-cell">Level</TableHead>
                         <TableHead className="w-[100px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -1383,7 +1423,7 @@ const ChapterDetail = () => {
                                 </div>
                               )}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="hidden md:table-cell">
                               <div className="flex items-center gap-1">
                                 {'⭐'.repeat(word.difficulty || 3)}
                               </div>
@@ -1409,7 +1449,7 @@ const ChapterDetail = () => {
                       }) : (
                         <TableRow>
                           <TableCell colSpan={bulkSelectMode ? 5 : 4} className="text-center py-6 text-muted-foreground">
-                            {searchQuery || difficultyFilter !== 'all' || topikFilter !== 'all' ? 'No words match your filters' : 'No words to learn in this chapter'}
+                            {searchQuery || difficultyFilter !== 'all' ? 'No words match your filters' : 'No words to learn in this chapter'}
                           </TableCell>
                         </TableRow>
                       )}
@@ -1499,20 +1539,65 @@ const ChapterDetail = () => {
                   })}
                   {filteredWords(unknownWords).length === 0 && (
                     <div className="col-span-2 text-center py-8 text-muted-foreground">
-                      {searchQuery || difficultyFilter !== 'all' || topikFilter !== 'all' ? 'No words match your filters' : 'No words to learn in this chapter'}
+                      {searchQuery || difficultyFilter !== 'all' ? 'No words match your filters' : 'No words to learn in this chapter'}
                     </div>
                   )}
                 </div>
               </TabsContent>
               
               <TabsContent value="known">
-                <div className="border rounded-md overflow-hidden">
+                {/* Mobile card view for known words */}
+                <div className="sm:hidden space-y-3">
+                  {filteredWords(knownWords).length > 0 ? filteredWords(knownWords).map(word => (
+                    <div key={word.id} className="border rounded-lg p-3 bg-green-50/50">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-base">{word.word}</span>
+                            <span className="text-xs text-muted-foreground">{'⭐'.repeat(word.difficulty || 3)}</span>
+                          </div>
+                          {word.phonetic && (
+                            <p className="text-xs text-muted-foreground mt-0.5">[{word.phonetic}]</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <Button variant="ghost" size="sm" onClick={() => speakKorean(word.word)} className="h-7 w-7 p-0">
+                            <Volume2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleMarkAsKnown(word.id)} className="h-7 w-7 p-0">
+                            <Check className="h-3.5 w-3.5 text-green-600" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleEditWord(word)} className="h-7 w-7 p-0">
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteWord(word.id)} className="h-7 w-7 p-0 text-destructive">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-sm text-gray-700">{word.definition}</div>
+                      {word.example && (
+                        <div className="mt-2 pt-2 border-t border-border/30 text-xs text-muted-foreground">
+                          <p>{word.example}</p>
+                          {word.notes && <p className="mt-1 text-muted-foreground/70">{word.notes}</p>}
+                        </div>
+                      )}
+                    </div>
+                  )) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      {searchQuery || difficultyFilter !== 'all' ? 'No known words match your filters' : 'No known words in this chapter'}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Desktop table view for known words */}
+                <div className="hidden sm:block border rounded-md overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Korean</TableHead>
                         <TableHead>Definition</TableHead>
-                        <TableHead>Level</TableHead>
+                        <TableHead className="hidden md:table-cell">Level</TableHead>
                         <TableHead className="w-[100px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -1547,7 +1632,7 @@ const ChapterDetail = () => {
                               </div>
                             )}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden md:table-cell">
                             <div className="flex items-center gap-1">
                               {'⭐'.repeat(word.difficulty || 3)}
                             </div>
@@ -1572,7 +1657,7 @@ const ChapterDetail = () => {
                       )) : (
                         <TableRow>
                           <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                            {searchQuery || difficultyFilter !== 'all' || topikFilter !== 'all' ? 'No known words match your filters' : 'No known words in this chapter'}
+                            {searchQuery || difficultyFilter !== 'all' ? 'No known words match your filters' : 'No known words in this chapter'}
                           </TableCell>
                         </TableRow>
                       )}
