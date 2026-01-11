@@ -88,6 +88,7 @@ const ChapterDetail = () => {
   });
   const [koreanDefinition, setKoreanDefinition] = useState('');
   const [isAutoFetching, setIsAutoFetching] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [fetchTimeoutId, setFetchTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [isFetchingForEdit, setIsFetchingForEdit] = useState(false);
   const [tagInput, setTagInput] = useState<string>('');
@@ -1099,6 +1100,20 @@ const ChapterDetail = () => {
       <Navbar />
       
       <main className="max-w-4xl mx-auto px-4 py-8">
+        {/* Chapter Title Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/chapters')} className="p-2">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">{chapter.title}</h1>
+            {chapter.description && <p className="text-sm text-muted-foreground mt-1">{chapter.description}</p>}
+          </div>
+          <Badge variant="secondary" className="text-sm">
+            {words.length} words
+          </Badge>
+        </div>
+        
         <div className="flex flex-wrap items-center gap-2 mb-6">
           {mode !== 'flashcards' && (
             <div className="flex flex-wrap items-center gap-2">
@@ -1133,8 +1148,6 @@ const ChapterDetail = () => {
             </div>
           )}
         </div>
-        
-        {chapter.description && mode !== 'flashcards' && <p className="text-gray-600 mb-6">{chapter.description}</p>}
         
         {mode === 'flashcards' ? (
           <div className="py-4">
