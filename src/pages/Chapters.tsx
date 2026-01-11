@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, Upload, Info, Download } from 'lucide-react';
+import { Plus, Trash2, Upload, Info, Download, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ChapterCard from '@/components/chapters/ChapterCard';
 import Navbar from '@/components/layout/Navbar';
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import * as XLSX from 'xlsx';
 
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect as useAuthEffect, useState as useAuthState } from 'react';
@@ -874,6 +875,63 @@ const Chapters = () => {
       });
     }
   };
+
+  // Backup all chapters to Excel
+  const handleBackupAllChapters = async () => {
+    try {
+      toast({
+        title: "Creating backup",
+        description: "Exporting all chapters and vocabulary..."
+      });
+
+      const workbook = XLSX.utils.book_new();
+      
+      // Fetch all chapters with their words
+      const allChapters = await fetchAllChapters();
+      
+      for (const chapter of allChapters) {
+        const words = await fetchWordsByChapter(chapter.id);
+        
+        if (words.length > 0) {
+          const worksheetData = [
+            ['word', 'definition', 'phonetic', 'example', 'notes', 'difficulty', 'priority', 'is_known', 'is_bookmarked'],
+            ...words.map(word => [
+              word.word,
+              word.definition,
+              word.phonetic || '',
+              word.example || '',
+              word.notes || '',
+              word.difficulty || 3,
+              word.priority || 3,
+              word.is_known ? 'true' : 'false',
+              word.is_bookmarked ? 'true' : 'false'
+            ])
+          ];
+          
+          const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+          // Truncate sheet name to 31 chars (Excel limit)
+          const sheetName = chapter.title.substring(0, 31).replace(/[\\/*?[\]]/g, '_');
+          XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+        }
+      }
+
+      const date = new Date().toISOString().split('T')[0];
+      XLSX.writeFile(workbook, `vocabulary-backup-${date}.xlsx`);
+
+      toast({
+        title: "Backup complete",
+        description: `Exported ${allChapters.length} chapters to Excel file.`
+      });
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      toast({
+        title: "Backup failed",
+        description: "There was an error creating the backup.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const filteredChapters = chapters.filter(chapter => chapter.title.toLowerCase().includes(searchQuery.toLowerCase()));
   return <div className="min-h-screen bg-gray-50 mx-[3px] px-[3px] py-[5px]">
       <Navbar />
@@ -882,9 +940,11 @@ const Chapters = () => {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">My Chapters</h1>
           </div>
-          <div className="flex gap-2">
-            
-            
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={handleBackupAllChapters} className="flex items-center gap-2 bg-amber-100 hover:bg-amber-200 text-amber-800">
+              <Save className="h-4 w-4" />
+              Backup All
+            </Button>
             <Button variant="outline" onClick={() => setShowFetchWarning(true)} className="flex items-center gap-2 bg-green-400 hover:bg-green-300">
               <Download className="h-4 w-4" />
               Fetch Chapters
