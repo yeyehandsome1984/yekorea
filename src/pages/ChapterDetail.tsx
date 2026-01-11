@@ -609,6 +609,25 @@ const ChapterDetail = () => {
         tags: newWord.tags || [],
         priority: newWord.priority || 3
       });
+
+      // If target chapters selected, copy to those chapters
+      if (copyTargetChapters.length > 0) {
+        const wordsToCopy = copyTargetChapters.map(targetChapterId => ({
+          chapter_id: targetChapterId,
+          word: cleanedWord,
+          definition: combinedDefinition as string,
+          phonetic: newWord.phonetic || '',
+          example: newWord.example || '',
+          notes: newWord.notes || '',
+          is_bookmarked: false,
+          is_known: false,
+          difficulty: newWord.difficulty || 3,
+          topik_level: newWord.topikLevel || '',
+          tags: newWord.tags || [],
+          priority: newWord.priority || 3
+        }));
+        await createWords(wordsToCopy);
+      }
       
       await loadChapter(); // Reload to get fresh data
       
@@ -626,12 +645,20 @@ const ChapterDetail = () => {
       });
       setKoreanDefinition('');
       setTagInput('');
+      setCopyTargetChapters([]);
       setIsAddingWord(false);
       
-      toast({
-        title: "Word added",
-        description: `"${cleanedWord}" has been added to the chapter.`
-      });
+      if (copyTargetChapters.length > 0) {
+        toast({
+          title: "Word added",
+          description: `"${cleanedWord}" has been added and copied to ${copyTargetChapters.length} chapter(s).`
+        });
+      } else {
+        toast({
+          title: "Word added",
+          description: `"${cleanedWord}" has been added to the chapter.`
+        });
+      }
     } catch (e) {
       console.error("Error adding word:", e);
       toast({
@@ -2011,6 +2038,29 @@ const ChapterDetail = () => {
                   ))}
                 </div>
               )}
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Also copy to chapters (optional):</Label>
+              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border rounded bg-background">
+                {allChapters
+                  .filter(ch => ch.id !== chapterId)
+                  .map(ch => (
+                    <label key={ch.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={copyTargetChapters.includes(ch.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setCopyTargetChapters([...copyTargetChapters, ch.id]);
+                          } else {
+                            setCopyTargetChapters(copyTargetChapters.filter(chId => chId !== ch.id));
+                          }
+                        }}
+                      />
+                      {ch.title}
+                    </label>
+                  ))}
+              </div>
             </div>
           </div>
           
