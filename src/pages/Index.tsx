@@ -102,10 +102,10 @@ const Index = () => {
     to: '/topik-resources',
     gradient: 'gradient-indigo'
   }];
-  return <div className="min-h-screen bg-gray-50">
+  return <div className="min-h-screen bg-gray-50 safe-area-inset">
       <Navbar />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-10">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
           {features.map(feature => <FeatureCard key={feature.title} title={feature.title} description={feature.description} icon={feature.icon} to={feature.to} gradient={feature.gradient} isExternal={feature.isExternal} openInSamePage={feature.openInSamePage} onHover={feature.title === 'Spelling' ? handleSpellingHover : undefined} />)}
         </div>
       </main>
