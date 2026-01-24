@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Play, Plus, Edit, Save, Trash2, FileSpreadsheet, Check, Search, FilterX, PlusCircle, ListPlus, Download, ChevronDown, Volume2, Copy, Loader2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Play, Plus, Edit, Save, Trash2, FileSpreadsheet, Check, Search, FilterX, PlusCircle, ListPlus, Download, ChevronDown, Volume2, Copy, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useSwipe } from '@/hooks/use-swipe';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -111,6 +113,38 @@ const ChapterDetail = () => {
   const [isBulkFetching, setIsBulkFetching] = useState(false);
   const [bulkFetchProgress, setBulkFetchProgress] = useState({ current: 0, total: 0, updated: 0, skipped: 0, failed: 0 });
   const [showBulkFetchDialog, setShowBulkFetchDialog] = useState(false);
+  const isMobile = useIsMobile();
+
+  // Chapter navigation helpers
+  const sortedChapters = useMemo(() => {
+    return [...allChapters].sort((a, b) => a.title.localeCompare(b.title));
+  }, [allChapters]);
+
+  const currentChapterIndex = useMemo(() => {
+    return sortedChapters.findIndex(ch => ch.id === chapterId);
+  }, [sortedChapters, chapterId]);
+
+  const prevChapter = currentChapterIndex > 0 ? sortedChapters[currentChapterIndex - 1] : null;
+  const nextChapter = currentChapterIndex < sortedChapters.length - 1 ? sortedChapters[currentChapterIndex + 1] : null;
+
+  const goToPrevChapter = useCallback(() => {
+    if (prevChapter) {
+      navigate(`/chapters/${prevChapter.id}`);
+    }
+  }, [prevChapter, navigate]);
+
+  const goToNextChapter = useCallback(() => {
+    if (nextChapter) {
+      navigate(`/chapters/${nextChapter.id}`);
+    }
+  }, [nextChapter, navigate]);
+
+  // Swipe handlers for mobile chapter navigation
+  const swipeHandlers = useSwipe({
+    minSwipeDistance: 80,
+    onSwipeLeft: goToNextChapter,
+    onSwipeRight: goToPrevChapter,
+  });
 
   
   // Auto-fetch word data from Lovable AI
@@ -1123,23 +1157,60 @@ const ChapterDetail = () => {
   const unknownWords = sortWordsAlphabetically(processWordsForDisplay(words.filter(w => !w.isKnown) || []));
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div 
+      className="min-h-screen bg-gray-50"
+      {...(isMobile ? swipeHandlers : {})}
+    >
       <Navbar />
       
       <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Chapter Title Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/chapters')} className="p-2">
+        {/* Chapter Title Header with Navigation */}
+        <div className="flex items-center gap-2 sm:gap-3 mb-6">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/chapters')} className="p-2 shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="flex-1">
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">{chapter.title}</h1>
-            {chapter.description && <p className="text-sm text-muted-foreground mt-1">{chapter.description}</p>}
+          
+          {/* Prev Chapter Button */}
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={goToPrevChapter}
+            disabled={!prevChapter}
+            className="h-9 w-9 shrink-0"
+            title={prevChapter ? `Previous: ${prevChapter.title}` : 'No previous chapter'}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">{chapter.title}</h1>
+            {chapter.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{chapter.description}</p>}
           </div>
-          <Badge variant="secondary" className="text-sm">
+          
+          {/* Next Chapter Button */}
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={goToNextChapter}
+            disabled={!nextChapter}
+            className="h-9 w-9 shrink-0"
+            title={nextChapter ? `Next: ${nextChapter.title}` : 'No next chapter'}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          
+          <Badge variant="secondary" className="text-sm shrink-0 hidden xs:flex">
             {words.length} words
           </Badge>
         </div>
+        
+        {/* Mobile swipe hint - shown briefly on first visit */}
+        {isMobile && (prevChapter || nextChapter) && (
+          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground mb-4 px-2">
+            {prevChapter && <span className="flex items-center gap-1"><ChevronLeft className="h-3 w-3" /> Swipe right</span>}
+            {nextChapter && <span className="flex items-center gap-1">Swipe left <ChevronRight className="h-3 w-3" /></span>}
+          </div>
+        )}
         
         <div className="flex flex-wrap items-center gap-2 mb-6">
           {mode !== 'flashcards' && (
