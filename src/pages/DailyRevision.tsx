@@ -609,50 +609,50 @@ const DailyRevision = () => {
   };
 
   return (
-    <div className={`min-h-screen transition-colors ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen transition-colors safe-area-inset ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <Navbar />
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-0 lg:px-[31px]">
+      <main className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-6 lg:px-8">
         {mode === 'intro' ? (
           <div className="max-w-2xl mx-auto">
-            <div className="mb-8 text-center">
-              <div className={`inline-flex items-center justify-center p-2 rounded-full mb-4 ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-100'}`}>
-                <Activity className={`h-8 w-8 ${isDarkMode ? 'text-blue-400' : 'text-primary'}`} />
+            <div className="mb-6 sm:mb-8 text-center">
+              <div className={`inline-flex items-center justify-center p-2 rounded-full mb-3 sm:mb-4 ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-100'}`}>
+                <Activity className={`h-6 w-6 sm:h-8 sm:w-8 ${isDarkMode ? 'text-blue-400' : 'text-primary'}`} />
               </div>
-              <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Daily Revision</h1>
-              <p className={`mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              <h1 className={`text-2xl sm:text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Daily Revision</h1>
+              <p className={`mt-2 text-sm sm:text-base ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 Boost your learning with daily practice sessions tailored to your progress
               </p>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-              <Card className={isDarkMode ? 'bg-gray-800 border-gray-700' : ''}>
-                <CardContent className="pt-6">
+            <div className="grid grid-cols-1 xs:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              <Card className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : ''} active:scale-[0.99] transition-transform`}>
+                <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6">
                   <div className="flex flex-col items-center text-center">
-                    <div className={`p-3 rounded-full mb-4 ${isDarkMode ? 'bg-blue-900/20' : 'bg-primary/10'}`}>
-                      <Clock className={`h-6 w-6 ${isDarkMode ? 'text-blue-400' : 'text-primary'}`} />
+                    <div className={`p-2.5 sm:p-3 rounded-full mb-3 sm:mb-4 ${isDarkMode ? 'bg-blue-900/20' : 'bg-primary/10'}`}>
+                      <Clock className={`h-5 w-5 sm:h-6 sm:w-6 ${isDarkMode ? 'text-blue-400' : 'text-primary'}`} />
                     </div>
-                    <h3 className={`font-medium text-lg mb-2 ${isDarkMode ? 'text-white' : ''}`}>Daily Session</h3>
-                    <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <h3 className={`font-medium text-base sm:text-lg mb-1.5 sm:mb-2 ${isDarkMode ? 'text-white' : ''}`}>Daily Session</h3>
+                    <p className={`text-xs sm:text-sm mb-4 sm:mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                       Focus on words you've struggled with based on your learning history
                     </p>
-                    <Button onClick={handleStartDailyRevision} className="w-full">
+                    <Button onClick={handleStartDailyRevision} className="w-full touch-target h-10 sm:h-11">
                       Start Daily Session
                     </Button>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className={isDarkMode ? 'bg-gray-800 border-gray-700' : ''}>
-                <CardContent className="pt-6">
+              <Card className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : ''} active:scale-[0.99] transition-transform`}>
+                <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6">
                   <div className="flex flex-col items-center text-center">
-                    <div className={`p-3 rounded-full mb-4 ${isDarkMode ? 'bg-amber-900/20' : 'bg-amber-100'}`}>
-                      <Flame className={`h-6 w-6 ${isDarkMode ? 'text-amber-400' : 'text-amber-500'}`} />
+                    <div className={`p-2.5 sm:p-3 rounded-full mb-3 sm:mb-4 ${isDarkMode ? 'bg-amber-900/20' : 'bg-amber-100'}`}>
+                      <Flame className={`h-5 w-5 sm:h-6 sm:w-6 ${isDarkMode ? 'text-amber-400' : 'text-amber-500'}`} />
                     </div>
-                    <h3 className={`font-medium text-lg mb-2 ${isDarkMode ? 'text-white' : ''}`}>Smart Revision</h3>
-                    <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <h3 className={`font-medium text-base sm:text-lg mb-1.5 sm:mb-2 ${isDarkMode ? 'text-white' : ''}`}>Smart Revision</h3>
+                    <p className={`text-xs sm:text-sm mb-4 sm:mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                       AI-powered revision focusing on your most challenging words
                     </p>
-                    <Button onClick={handleStartSmartRevision} variant="secondary" className="w-full">
+                    <Button onClick={handleStartSmartRevision} variant="secondary" className="w-full touch-target h-10 sm:h-11">
                       Start Smart Revision
                     </Button>
                   </div>
@@ -661,12 +661,12 @@ const DailyRevision = () => {
             </div>
             
             <div className="text-center">
-              <p className={`text-sm mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              <p className={`text-xs sm:text-sm mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 Daily revision uses intelligent algorithms to help you focus on words 
                 you've struggled with in the past, optimizing your learning time.
               </p>
               
-              <Button variant="outline" onClick={() => navigate('/chapters')}>
+              <Button variant="outline" onClick={() => navigate('/chapters')} className="touch-target h-10 sm:h-11">
                 <BookOpen className="h-4 w-4 mr-2" /> Browse Chapters
               </Button>
             </div>

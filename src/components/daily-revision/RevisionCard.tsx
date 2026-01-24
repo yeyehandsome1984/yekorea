@@ -115,68 +115,65 @@ const RevisionCard = ({
     }
   };
   const progress = currentIndex / totalCards * 100;
-  return <div className="w-full max-w-2xl mx-auto">
-      <div className="mb-8 my-[20px]">
-        {onBack && <Button variant="ghost" onClick={onBack} className="flex items-center text-gray-600">
+  return <div className="w-full max-w-2xl mx-auto px-3 sm:px-4">
+      <div className="mb-4 sm:mb-8 my-3 sm:my-5">
+        {onBack && <Button variant="ghost" onClick={onBack} className="flex items-center text-gray-600 touch-target h-10 sm:h-9 mb-2">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>}
-        <div className="text-sm text-gray-500 mb-2">
+        <div className="text-xs sm:text-sm text-gray-500 mb-2">
           Card {currentIndex} of {totalCards}
         </div>
-        <div className="h-1 w-full bg-gray-100 rounded overflow-hidden">
+        <div className="h-1.5 sm:h-1 w-full bg-gray-100 rounded overflow-hidden">
           <div className="h-full bg-blue-500 transition-all duration-300" style={{
           width: `${progress}%`
         }} />
         </div>
       </div>
 
-      <Card ref={cardRef} onClick={onFlip} className="cursor-pointer relative" onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
-        <CardContent className="pt-6 pb-6 min-h-[250px] flex flex-col items-center justify-center">
-          <div className="absolute top-4 right-4 flex space-x-2">
-            <Button variant="ghost" size="sm" onClick={handleCheckMeaning} className="h-8 w-8 p-0">
-              <Search className="h-5 w-5 text-blue-500" />
+      <Card ref={cardRef} onClick={onFlip} className="cursor-pointer relative active:scale-[0.99] transition-transform" onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
+        <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6 min-h-[200px] sm:min-h-[250px] flex flex-col items-center justify-center">
+          <div className="absolute top-2 sm:top-4 right-2 sm:right-4 flex space-x-1 sm:space-x-2">
+            <Button variant="ghost" size="sm" onClick={handleCheckMeaning} className="h-9 w-9 sm:h-8 sm:w-8 p-0 touch-target">
+              <Search className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
             </Button>
-            {onBookmark && <Button variant="ghost" size="sm" onClick={handleBookmarkToggle} className="h-8 w-8 p-0">
-                {isBookmarked ? <Star className="h-5 w-5 text-amber-500" /> : <StarOff className="h-5 w-5 text-gray-400" />}
+            {onBookmark && <Button variant="ghost" size="sm" onClick={handleBookmarkToggle} className="h-9 w-9 sm:h-8 sm:w-8 p-0 touch-target">
+                {isBookmarked ? <Star className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" /> : <StarOff className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />}
               </Button>}
           </div>
           
-          <div className="flex flex-col items-center justify-center p-4 text-center">
-            {!isFlipped ? <div className="flex items-center gap-3">
-                <h2 className="text-4xl font-bold text-gray-900">{word}</h2>
-                <Button variant="ghost" size="sm" onClick={handlePlayAudio} className="h-10 w-10 p-0">
-                  <Volume2 className="h-6 w-6" />
+          <div className="flex flex-col items-center justify-center p-3 sm:p-4 text-center">
+            {!isFlipped ? <div className="flex items-center gap-2 sm:gap-3">
+                <h2 className="text-2xl sm:text-4xl font-bold text-gray-900">{word}</h2>
+                <Button variant="ghost" size="sm" onClick={handlePlayAudio} className="h-10 w-10 p-0 touch-target">
+                  <Volume2 className="h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
-              </div> : <div className="space-y-4 text-center">
-                <h3 className="font-bold text-red-600 text-2xl">{word}</h3>
-                <div className="space-y-2">
-                  {phonetic && <p className="text-gray-600 font-medium">Meaning: {phonetic}</p>}
-                  <p className="text-gray-900 text-xl font-bold">Definition: {translation}</p>
+              </div> : <div className="space-y-3 sm:space-y-4 text-center">
+                <h3 className="font-bold text-red-600 text-xl sm:text-2xl">{word}</h3>
+                <div className="space-y-1.5 sm:space-y-2">
+                  {phonetic && <p className="text-gray-600 font-medium text-sm sm:text-base">Meaning: {phonetic}</p>}
+                  <p className="text-gray-900 text-lg sm:text-xl font-bold">Definition: {translation}</p>
                 </div>
-                {example && <p className="text-gray-600 italic mt-4">"{example}"</p>}
-                {notes && <p className="text-sm text-gray-500 mt-2">{notes}</p>}
+                {example && <p className="text-gray-600 italic mt-3 sm:mt-4 text-sm sm:text-base">"{example}"</p>}
+                {notes && <p className="text-xs sm:text-sm text-gray-500 mt-2">{notes}</p>}
               </div>}
           </div>
         </CardContent>
 
-        {isFlipped && <CardFooter className="p-3 flex justify-between items-center gap-3">
+        {isFlipped && <CardFooter className="p-2 sm:p-3 flex justify-between items-center gap-2 sm:gap-3">
             {/* Unknown/Incorrect button on left */}
             <Button variant="outline" onClick={e => {
           e.stopPropagation();
           onResult('incorrect');
-        }} size="sm" className="flex-1 max-w-[120px] bg-white border-red-500 text-red-500 hover:bg-red-50 text-sm py-2 animate-fade-in mx-[20px]">
+        }} size="sm" className="flex-1 max-w-[140px] bg-white border-red-500 text-red-500 hover:bg-red-50 active:bg-red-100 text-xs sm:text-sm py-2.5 sm:py-2 animate-fade-in mx-2 sm:mx-5 touch-target h-11 sm:h-10">
               <X className="h-4 w-4 mr-1" /> Unknown
             </Button>
-            
-            {/* Swipe instruction */}
-            
             
             {/* Known/Correct button on right */}
             <Button onClick={e => {
           e.stopPropagation();
           onResult('correct');
-        }} size="sm" className="flex-1 max-w-[120px] bg-green-500 text-white hover:bg-green-600 text-sm py-2 animate-fade-in my-0 mx-[20px]">
+        }} size="sm" className="flex-1 max-w-[140px] bg-green-500 text-white hover:bg-green-600 active:bg-green-700 text-xs sm:text-sm py-2.5 sm:py-2 animate-fade-in my-0 mx-2 sm:mx-5 touch-target h-11 sm:h-10">
               <Check className="h-4 w-4 mr-1" /> Known
             </Button>
           </CardFooter>}

@@ -933,35 +933,40 @@ const Chapters = () => {
   };
 
   const filteredChapters = chapters.filter(chapter => chapter.title.toLowerCase().includes(searchQuery.toLowerCase()));
-  return <div className="min-h-screen bg-gray-50 mx-[3px] px-[3px] py-[5px]">
+  return <div className="min-h-screen bg-gray-50 safe-area-inset">
       <Navbar />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-10">
+        <div className="flex flex-col gap-4 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Chapters</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Chapters</h1>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={handleBackupAllChapters} className="flex items-center gap-2 bg-amber-100 hover:bg-amber-200 text-amber-800">
-              <Save className="h-4 w-4" />
-              Backup All
+            <Button variant="outline" onClick={handleBackupAllChapters} className="flex items-center gap-1.5 sm:gap-2 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs sm:text-sm h-9 sm:h-10 px-2.5 sm:px-4 touch-target">
+              <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Backup</span>
+              <span className="xs:hidden">💾</span>
             </Button>
-            <Button variant="outline" onClick={() => setShowFetchWarning(true)} className="flex items-center gap-2 bg-green-400 hover:bg-green-300">
-              <Download className="h-4 w-4" />
-              Fetch Chapters
+            <Button variant="outline" onClick={() => setShowFetchWarning(true)} className="flex items-center gap-1.5 sm:gap-2 bg-green-400 hover:bg-green-300 text-xs sm:text-sm h-9 sm:h-10 px-2.5 sm:px-4 touch-target">
+              <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Fetch</span>
+              <span className="xs:hidden">📥</span>
             </Button>
             {user?.email === 'dhirajsahani8541@gmail.com' && (
-              <Button variant="outline" onClick={handleUpdateChapters} className="flex items-center gap-2 bg-blue-400 hover:bg-blue-300">
-                <Upload className="h-4 w-4" />
-                Update Storage
+              <Button variant="outline" onClick={handleUpdateChapters} className="flex items-center gap-1.5 sm:gap-2 bg-blue-400 hover:bg-blue-300 text-xs sm:text-sm h-9 sm:h-10 px-2.5 sm:px-4 touch-target">
+                <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline">Update</span>
+                <span className="xs:hidden">📤</span>
               </Button>
             )}
-            <Button className="sm:self-end" onClick={() => setShowCreateDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" /> New Chapter
+            <Button className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm h-9 sm:h-10 px-2.5 sm:px-4 touch-target" onClick={() => setShowCreateDialog(true)}>
+              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> 
+              <span className="hidden xs:inline">New Chapter</span>
+              <span className="xs:hidden">New</span>
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
           {filteredChapters.map(chapter => <div key={chapter.id} className="relative">
               <ChapterCard 
                 id={chapter.id} 

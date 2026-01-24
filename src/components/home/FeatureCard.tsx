@@ -32,14 +32,14 @@ const FeatureCard = ({
   };
 
   const CardContent = () => (
-    <div className="feature-card bg-white rounded-lg p-6 shadow-sm transition-all duration-300 hover:shadow-md text-center flex flex-col items-center justify-center gap-3">
-      <div className={cn('p-3 rounded-full transition-all duration-300 group-hover:scale-110', gradient)}>
-        <Icon className="h-7 w-7 text-white transition-all duration-300 group-hover:stroke-[2.5]" strokeWidth={2} />
+    <div className="feature-card bg-white rounded-lg p-3 sm:p-4 md:p-6 shadow-sm transition-all duration-300 hover:shadow-md active:scale-[0.98] text-center flex flex-col items-center justify-center gap-2 sm:gap-3 touch-target">
+      <div className={cn('p-2 sm:p-3 rounded-full transition-all duration-300 group-hover:scale-110', gradient)}>
+        <Icon className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white transition-all duration-300 group-hover:stroke-[2.5]" strokeWidth={2} />
       </div>
-      <h3 className="font-medium text-lg text-gray-900 transition-colors duration-300 group-hover:text-primary">
+      <h3 className="font-medium text-sm sm:text-base md:text-lg text-gray-900 transition-colors duration-300 group-hover:text-primary leading-tight">
         {title}
       </h3>
-      <p className="text-sm text-gray-600">{description}</p>
+      <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{description}</p>
     </div>
   );
 

@@ -63,17 +63,17 @@ const Navbar = () => {
   ];
 
   return (
-    <header className="bg-white border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-40 safe-area-inset">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-14 sm:h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link to="/" className="flex items-center space-x-2">
-                <Book className="h-6 w-6 text-primary rounded-md" />
-                <span className="font-bold text-lg text-gray-900">叶帅学韩</span>
+              <Link to="/" className="flex items-center space-x-1.5 sm:space-x-2 touch-target">
+                <Book className="h-5 w-5 sm:h-6 sm:w-6 text-primary rounded-md" />
+                <span className="font-bold text-base sm:text-lg text-gray-900">叶帅学韩</span>
               </Link>
             </div>
-            <nav className="hidden sm:ml-6 sm:flex sm:space-x-8">
+            <nav className="hidden lg:ml-6 lg:flex lg:space-x-6">
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
@@ -85,59 +85,61 @@ const Navbar = () => {
               ))}
             </nav>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             {session ? (
-              <Button onClick={handleLogout} variant="ghost" className="flex items-center space-x-2">
+              <Button onClick={handleLogout} variant="ghost" className="hidden sm:flex items-center space-x-2 touch-target">
                 <LogOut className="h-4 w-4" />
                 <span>Sign Out</span>
               </Button>
             ) : (
-              <Button onClick={() => navigate("/auth")} variant="ghost" className="flex items-center space-x-2">
+              <Button onClick={() => navigate("/auth")} variant="ghost" className="hidden sm:flex items-center space-x-2 touch-target">
                 <LogIn className="h-4 w-4" />
                 <span>Sign In</span>
               </Button>
             )}
-            <div className="sm:hidden">
+            <div className="lg:hidden">
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="outline" size="icon">
+                  <Button variant="outline" size="icon" className="touch-target h-10 w-10 sm:h-9 sm:w-9">
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent>
+                <SheetContent className="w-[85vw] max-w-[320px] mobile-scroll">
                   <SheetHeader>
                     <SheetTitle>叶之寒雪</SheetTitle>
                     <SheetDescription>Your Korean learning companion</SheetDescription>
                   </SheetHeader>
-                  <div className="mt-6 flex flex-col space-y-3">
+                  <div className="mt-6 flex flex-col space-y-1 overflow-y-auto max-h-[calc(100vh-200px)]">
                     {navLinks.map((link) => (
                       <Link
                         key={link.name}
                         to={link.path}
-                        className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50"
+                        className="block px-3 py-3 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50 active:bg-gray-100 touch-target"
                       >
                         {link.name}
                       </Link>
                     ))}
-                    {session ? (
-                      <Button
-                        onClick={handleLogout}
-                        variant="ghost"
-                        className="flex items-center justify-start px-3 py-2"
-                      >
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Sign Out
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={() => navigate("/auth")}
-                        variant="ghost"
-                        className="flex items-center justify-start px-3 py-2"
-                      >
-                        <LogIn className="h-4 w-4 mr-2" />
-                        Sign In
-                      </Button>
-                    )}
+                    <div className="pt-4 border-t mt-4">
+                      {session ? (
+                        <Button
+                          onClick={handleLogout}
+                          variant="ghost"
+                          className="flex items-center justify-start w-full px-3 py-3 touch-target"
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Sign Out
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => navigate("/auth")}
+                          variant="ghost"
+                          className="flex items-center justify-start w-full px-3 py-3 touch-target"
+                        >
+                          <LogIn className="h-4 w-4 mr-2" />
+                          Sign In
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </SheetContent>
               </Sheet>
